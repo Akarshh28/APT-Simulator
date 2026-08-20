@@ -1,0 +1,285 @@
+@import "tailwindcss";
+
+/* ─── APT Simulator — Design System ─────────────────────────── */
+
+@theme {
+  --color-bg-primary: var(--app-bg-primary, #0a0e17);
+  --color-bg-panel: var(--app-bg-panel, #111827);
+  --color-bg-card: var(--app-bg-card, #1a2332);
+  --color-bg-hover: var(--app-bg-hover, #1f2937);
+  --color-border: var(--app-border, #1e3a5f);
+  --color-border-dim: var(--app-border-dim, #1a2744);
+  
+  --color-accent: var(--app-accent, #3b82f6);
+  --color-accent-glow: var(--app-accent-glow, #60a5fa);
+  --color-danger: var(--app-danger, #ef4444);
+  --color-danger-glow: var(--app-danger-glow, #f87171);
+  --color-safe: var(--app-safe, #22c55e);
+  --color-safe-glow: var(--app-safe-glow, #4ade80);
+  --color-warning: var(--app-warning, #f59e0b);
+  --color-warning-glow: var(--app-warning-glow, #fbbf24);
+  --color-info: var(--app-info, #06b6d4);
+  
+  --color-text: var(--app-text, #e2e8f0);
+  --color-text-dim: var(--app-text-dim, #cbd5e1);
+  --color-text-muted: var(--app-text-muted, #94a3b8);
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─── Dynamic Themes ───────────────────────────────────────── */
+
+/* Default (Current) */
+:root, :root[data-theme="current"] {
+  --app-bg-primary: #0a0e17;
+  --app-bg-panel: #111827;
+  --app-bg-card: #1a2332;
+  --app-bg-hover: #1f2937;
+  --app-border: #1e3a5f;
+  --app-border-dim: #1a2744;
+  --app-accent: #3b82f6;
+  --app-accent-glow: #60a5fa;
+  --app-danger: #ef4444;
+  --app-danger-glow: #f87171;
+  --app-safe: #22c55e;
+  --app-safe-glow: #4ade80;
+  --app-warning: #f59e0b;
+  --app-warning-glow: #fbbf24;
+  --app-info: #06b6d4;
+  --app-text: #e2e8f0;
+  --app-text-dim: #cbd5e1;
+  --app-text-muted: #94a3b8;
+}
+
+/* Day Mode */
+:root[data-theme="day"] {
+  --app-bg-primary: #f1f5f9;
+  --app-bg-panel: #ffffff;
+  --app-bg-card: #f8fafc;
+  --app-bg-hover: #e2e8f0;
+  --app-border: #cbd5e1;
+  --app-border-dim: #e2e8f0;
+  --app-accent: #2563eb;
+  --app-accent-glow: #3b82f6;
+  --app-danger: #dc2626;
+  --app-danger-glow: #ef4444;
+  --app-safe: #16a34a;
+  --app-safe-glow: #22c55e;
+  --app-warning: #d97706;
+  --app-warning-glow: #f59e0b;
+  --app-info: #0891b2;
+  --app-text: #0f172a;
+  --app-text-dim: #334155;
+  --app-text-muted: #64748b;
+}
+
+/* Night Mode */
+:root[data-theme="night"] {
+  --app-bg-primary: #000000;
+  --app-bg-panel: #050505;
+  --app-bg-card: #0a0a0a;
+  --app-bg-hover: #111111;
+  --app-border: #222222;
+  --app-border-dim: #111111;
+  --app-accent: #00ffcc;     /* Cyan/Neon Greenish */
+  --app-accent-glow: #00ffcc;
+  --app-danger: #ff0033;     /* Neon Red */
+  --app-danger-glow: #ff0033;
+  --app-safe: #00ff00;       /* Neon Green */
+  --app-safe-glow: #00ff00;
+  --app-warning: #ffcc00;    /* Neon Amber */
+  --app-warning-glow: #ffcc00;
+  --app-info: #00ffff;
+  --app-text: #ffffff;
+  --app-text-dim: #888888;
+  --app-text-muted: #444444;
+}
+
+/* ─── Global Reset & Base ──────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+/* ─── Glassmorphism Panel ──────────────────────────────────── */
+
+.glass-panel {
+  background: color-mix(in srgb, var(--color-bg-panel) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-dim);
+  border-radius: 12px;
+}
+
+/* ─── Custom Classes ───────────────────────────────────────── */
+
+.zone-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.killchain-card-desc {
+  color: #cbd5e1 !important;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* ─── Pulse Animations ─────────────────────────────────────── */
+
+@keyframes pulse-green {
+  0%, 100% { filter: drop-shadow(0 0 2px var(--color-safe)); }
+  50% { filter: drop-shadow(0 0 6px var(--color-safe-glow)); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { filter: drop-shadow(0 0 4px var(--color-danger)); }
+  50% { filter: drop-shadow(0 0 10px var(--color-danger-glow)); }
+}
+
+@keyframes pulse-blue {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes flow-dash {
+  to { stroke-dashoffset: -20; }
+}
+
+.animate-flow-dash {
+  animation: flow-dash 1s linear infinite;
+}
+
+.meter-green {
+  fill: var(--color-safe);
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.meter-red {
+  fill: var(--color-danger);
+  animation: pulse-red 1s ease-in-out infinite;
+}
+
+.meter-yellow {
+  fill: var(--color-warning);
+  animation: pulse-green 0.5s ease-in-out 3;
+}
+
+/* ─── Risk Gauge ───────────────────────────────────────────── */
+
+.risk-gauge-ring {
+  transition: stroke-dashoffset 0.8s ease-in-out;
+}
+
+/* ─── Stage Indicators ─────────────────────────────────────── */
+
+.stage-active {
+  animation: pulse-blue 1.5s ease-in-out infinite;
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.stage-complete {
+  border-color: var(--color-safe);
+  background: color-mix(in srgb, var(--color-safe) 10%, transparent);
+}
+
+.stage-pending {
+  border-color: var(--color-border-dim);
+  opacity: 0.5;
+}
+
+/* ─── Network Graph ────────────────────────────────────────── */
+
+.graph-node {
+  cursor: pointer;
+  transition: r 0.3s;
+}
+
+.graph-node:hover {
+  r: 12;
+}
+
+.graph-edge-normal {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+@keyframes flow {
+  from { stroke-dashoffset: 18; }
+  to { stroke-dashoffset: 0; }
+}
+
+.graph-edge-anomalous {
+  stroke: var(--color-danger);
+  stroke-width: 4;
+  stroke-dasharray: 8 4;
+  animation: pulse-red 1s ease-in-out infinite, flow 0.5s linear infinite;
+}
+
+/* ─── Toggle Switch ────────────────────────────────────────── */
+
+.toggle-track {
+  width: 56px;
+  height: 28px;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-track.on { background: var(--color-safe); }
+.toggle-track.off { background: var(--color-danger); }
+
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px;
+  transition: left 0.3s;
+}
+
+.toggle-track.on .toggle-thumb { left: 31px; }
+.toggle-track.off .toggle-thumb { left: 3px; }

@@ -1,0 +1,123 @@
+# APT Smart Grid Attack — Default Scenario
+# ==========================================
+# Multi-stage APT targeting HES/MDMS infrastructure
+# Maps to MITRE ATT&CK for ICS kill-chain
+#
+# Timing: 5-minute compressed demo representing ~10 days of real-time activity.
+# Each stage runs in sequence; the engine manages transitions.
+
+name: "APT Smart Grid Attack — Default Scenario"
+description: |
+  A sophisticated multi-stage attack targeting a power distribution utility's
+  Head-End System (HES) and Meter Data Management System (MDMS). The attacker
+  begins with reconnaissance, compromises operator credentials, establishes
+  persistence via rogue accounts, moves laterally to access customer data,
+  sets up covert C2 communications, and ultimately executes a mass meter
+  disconnect causing a cascading blackout.
+
+duration_minutes: 5
+time_compression: 2880  # 5 min demo ≈ 10 days simulated
+
+stages:
+  # ──────────────────────────────────────────────────────────────
+  # Stage 1: Reconnaissance (T0846 — Remote System Discovery)
+  # ──────────────────────────────────────────────────────────────
+  - name: reconnaissance
+    technique_id: T0846
+    tactic: Discovery
+    description: "Attacker scans HES endpoints to map the attack surface"
+    start_offset_seconds: 0
+    delay_after: 3
+    config:
+      target_endpoints:
+        - "/api/health"
+        - "/api/meters"
+        - "/api/auth/login"
+        - "/api/operators"
+        - "/api/fleet/status"
+        - "/api/audit/logins"
+        - "/docs"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 2: Initial Access (T0859 — Valid Accounts)
+  # ──────────────────────────────────────────────────────────────
+  - name: initial_access
+    technique_id: T0859
+    tactic: Initial Access
+    description: "Credential stuffing against HES operator login"
+    start_offset_seconds: 30
+    delay_after: 3
+    config:
+      target_url: "/api/auth/login"
+      wordlist:
+        - "password"
+        - "123456"
+        - "admin"
+        - "grid2024"
+        - "admin123"
+      target_users:
+        - "operator1"
+        - "admin"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 3: Persistence (T1098 — Account Manipulation)
+  # ──────────────────────────────────────────────────────────────
+  - name: persistence
+    technique_id: T1098
+    tactic: Persistence
+    description: "Create rogue admin account in MDMS for backdoor access"
+    start_offset_seconds: 75
+    delay_after: 3
+    config:
+      rogue_account:
+        username: "svc_backup"
+        password: "Sup3rS3cur3!"
+        role: "admin"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 4: Lateral Movement (T0886 — Remote Services)
+  # ──────────────────────────────────────────────────────────────
+  - name: lateral_movement
+    technique_id: T0886
+    tactic: Lateral Movement
+    description: "Pivot from HES to MDMS and exfiltrate customer data"
+    start_offset_seconds: 105
+    delay_after: 3
+    config:
+      target_apis:
+        - "/api/customers"
+        - "/api/billing/CUST-A-0001"
+        - "/api/reports/consumption"
+        - "/api/operators"
+        - "/api/audit"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 5: Command & Control (T0869 — Standard App Layer Protocol)
+  # ──────────────────────────────────────────────────────────────
+  - name: command_control
+    technique_id: T0869
+    tactic: Command and Control
+    description: "Low-and-slow beacon via fake meter telemetry"
+    start_offset_seconds: 145
+    duration_seconds: 30
+    delay_after: 3
+    config:
+      beacon_interval_seconds: 47
+      beacon_jitter_seconds: 5
+      fake_meter_id: "SM-X-9999"
+
+  # ──────────────────────────────────────────────────────────────
+  # Stage 6: Impact (T0826 — Loss of Availability)
+  # ──────────────────────────────────────────────────────────────
+  - name: impact
+    technique_id: T0826
+    tactic: Impact
+    description: "Mass meter disconnect — cascading blackout"
+    start_offset_seconds: 205
+    delay_after: 0
+    config:
+      disconnect_batch_size: 100
+      batch_delay_seconds: 1
+      zone_order:
+        - "D"
+        - "E"
