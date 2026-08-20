@@ -20,7 +20,7 @@ export default function AttackerPanel() {
   };
 
   const getStageClass = (status) => {
-    if (status === 'prevented') return 'border-green-500/50 bg-green-500/10 shadow-[0_0_15px_rgba(34,197,94,0.2)]';
+    if (status === 'prevented') return 'border-teal-500/50 bg-teal-500/10 shadow-[0_0_15px_rgba(20,184,166,0.2)]';
     if (status === 'active') return 'border-blue-500/50 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.2)]';
     if (status === 'retrying') return 'border-orange-500/50 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.2)]';
     if (status === 'complete') return 'border-[var(--color-border)] bg-[var(--color-bg-hover)]';
@@ -31,7 +31,7 @@ export default function AttackerPanel() {
   };
 
   const getStatusDot = (status) => {
-    if (status === 'prevented') return 'bg-[var(--color-safe)]';
+    if (status === 'prevented') return 'bg-teal-500';
     if (status === 'active') return 'bg-[var(--color-accent)] animate-pulse';
     if (status === 'retrying') return 'bg-orange-500 animate-pulse';
     if (status === 'complete') return 'bg-[var(--color-safe)]';
@@ -95,7 +95,7 @@ export default function AttackerPanel() {
 
                   {/* Status label */}
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    status === 'prevented' ? 'text-[var(--color-safe)] animate-pulse' :
+                    status === 'prevented' ? 'text-teal-400 animate-pulse' :
                     status === 'active' ? 'text-[var(--color-accent)]' :
                     status === 'retrying' ? 'text-orange-500 animate-pulse' :
                     status === 'complete' ? 'text-[var(--color-safe)]' :

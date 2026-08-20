@@ -193,10 +193,10 @@ export default function NetworkGraph() {
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
     simulation.on('tick', () => {
-      // Constrain nodes within SVG bounds
+      // Constrain nodes within SVG bounds (with safe margin for labels and rings)
       simNodes.forEach(n => {
-        n.x = clamp(n.x, 30, width - 30);
-        n.y = clamp(n.y, 25, height - 25);
+        n.x = clamp(n.x, 45, width - 45);
+        n.y = clamp(n.y, 40, height - 45);
       });
 
       /* ── Edges ── */

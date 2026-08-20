@@ -432,9 +432,8 @@ export default function CityGridMap() {
           </div>
         )}
 
-        {/* Blocked overlay */}
         {hasBlocked && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div className="absolute top-6 left-0 right-0 flex justify-center pointer-events-none z-20">
             <div className="bg-[color-mix(in_srgb,var(--color-safe)_10%,transparent)] border border-[color-mix(in_srgb,var(--color-safe)_30%,transparent)] rounded-xl px-8 py-4 backdrop-blur-sm"
                  style={{ boxShadow: '0 0 30px color-mix(in srgb, var(--color-safe) 20%, transparent)' }}>
               <span className="text-xl font-bold text-[var(--color-safe)] tracking-wide">
