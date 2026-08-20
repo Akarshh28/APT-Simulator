@@ -9,3 +9,4 @@ dashboard/dist/
 .env
 *.log
 *.jsonl
+backend_log.txt
