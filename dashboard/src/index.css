@@ -229,7 +229,7 @@ body {
   opacity: 0.5;
 }
 
-/* ─── Network Graph ────────────────────────────────────────── */
+/* ─── Network Graph (SOC Threat Topology) ─────────────────── */
 
 .graph-node {
   cursor: pointer;
@@ -243,18 +243,51 @@ body {
 .graph-edge-normal {
   stroke: var(--color-border);
   stroke-width: 1.5;
-}
-
-@keyframes flow {
-  from { stroke-dashoffset: 18; }
-  to { stroke-dashoffset: 0; }
+  opacity: 0.4;
 }
 
 .graph-edge-anomalous {
   stroke: var(--color-danger);
-  stroke-width: 4;
+  stroke-width: 2.5;
   stroke-dasharray: 8 4;
-  animation: pulse-red 1s ease-in-out infinite, flow 0.5s linear infinite;
+  opacity: 0.85;
+  animation: flow-dash 1s linear infinite;
+}
+
+.graph-edge-c2 {
+  stroke: var(--color-danger);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  opacity: 0.7;
+  animation: beacon-pulse 2s ease-in-out infinite;
+}
+
+/* Node appears (rogue account, C2 host) */
+@keyframes node-appear {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-node-appear {
+  animation: node-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Pulsing ring for compromised nodes */
+@keyframes pulse-ring {
+  0% { r: 22; opacity: 0.6; }
+  50% { r: 28; opacity: 0.15; }
+  100% { r: 22; opacity: 0.6; }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+
+/* C2 beaconing edge pulse */
+@keyframes beacon-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
 }
 
 /* ─── Toggle Switch ────────────────────────────────────────── */

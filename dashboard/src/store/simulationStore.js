@@ -248,15 +248,8 @@ const useSimulationStore = create((set, get) => ({
           timestamp: new Date().toISOString()
         });
         
-        if (currentStage === 'command_control') {
-          get().setGraphData({
-            nodes: [{ id: 'operator1', type: 'operator' }, { id: 'HES', type: 'hes' }, { id: 'MDMS', type: 'mdms' }],
-            edges: [
-              { source: 'operator1', target: 'HES', is_anomalous: true },
-              { source: 'HES', target: 'MDMS', is_anomalous: true }
-            ]
-          });
-        }
+        
+
         
         if (currentStage === 'impact') {
           const currentZones = get().meterStatuses;

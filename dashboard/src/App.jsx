@@ -52,7 +52,7 @@ export default function App() {
           <div className="flex-1 min-h-0">
             <DefenderPanel />
           </div>
-          <div className="h-[220px] shrink-0">
+          <div className="h-[260px] shrink-0">
             <NetworkGraph />
           </div>
         </div>
