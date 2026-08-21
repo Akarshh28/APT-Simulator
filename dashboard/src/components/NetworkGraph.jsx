@@ -194,9 +194,11 @@ export default function NetworkGraph() {
 
     simulation.on('tick', () => {
       // Constrain nodes within SVG bounds (with safe margin for labels and rings)
+      const marginX = 60;
+      const marginY = 50;
       simNodes.forEach(n => {
-        n.x = clamp(n.x, 45, width - 45);
-        n.y = clamp(n.y, 40, height - 45);
+        n.x = clamp(n.x, marginX, width - marginX);
+        n.y = clamp(n.y, marginY, height - marginY);
       });
 
       /* ── Edges ── */

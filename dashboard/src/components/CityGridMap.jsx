@@ -176,6 +176,17 @@ export default function CityGridMap() {
           </div>
         </div>
       </div>
+      {/* Blocked Banner - Now a flex sibling so it pushes the map down without overlapping */}
+      {hasBlocked && (
+        <div className="flex justify-center mb-3 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="bg-[color-mix(in_srgb,var(--color-safe)_15%,transparent)] border border-[color-mix(in_srgb,var(--color-safe)_40%,transparent)] rounded-lg px-8 py-2.5 backdrop-blur-sm w-full max-w-lg text-center"
+               style={{ boxShadow: '0 0 20px color-mix(in srgb, var(--color-safe) 20%, transparent)' }}>
+            <span className="text-sm font-bold text-[var(--color-safe)] tracking-wider">
+              🛡️ ATTACK BLOCKED — Grid Protected
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Map SVG Container */}
       <div className="flex-1 relative overflow-hidden rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border-dim)] shadow-inner">
@@ -432,16 +443,6 @@ export default function CityGridMap() {
           </div>
         )}
 
-        {hasBlocked && (
-          <div className="absolute top-6 left-0 right-0 flex justify-center pointer-events-none z-20">
-            <div className="bg-[color-mix(in_srgb,var(--color-safe)_10%,transparent)] border border-[color-mix(in_srgb,var(--color-safe)_30%,transparent)] rounded-xl px-8 py-4 backdrop-blur-sm"
-                 style={{ boxShadow: '0 0 30px color-mix(in srgb, var(--color-safe) 20%, transparent)' }}>
-              <span className="text-xl font-bold text-[var(--color-safe)] tracking-wide">
-                🛡️ ATTACK BLOCKED — Grid Protected
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
