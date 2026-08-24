@@ -23,15 +23,42 @@ export default function ControlBar() {
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'current');
 
+  // Fallback metadata for offline Demo Mode
+  const fallbackMetadata = {
+    'credential_intrusion': {
+      name: 'Credential Intrusion (Default)',
+      description: 'An external attacker steals employee credentials to gain initial access, move laterally, and eventually disrupt the power grid.',
+    },
+    'insider_threat': {
+      name: 'Insider Threat',
+      description: 'A rogue employee with physical access tampers with a substation and establishes a C2 beacon for remote sabotage.',
+    },
+    'slow_burn_apt': {
+      name: 'Slow-Burn APT',
+      description: 'A highly sophisticated nation-state actor quietly persists in the network for months before launching a coordinated grid shutdown.',
+    },
+    'false_positive': {
+      name: 'False Positive (Normal Ops)',
+      description: 'Simulates completely normal administrative activity to test if the detection engine incorrectly flags legitimate operations.',
+    }
+  };
+
   // Fetch scenario metadata whenever it changes
   useEffect(() => {
     if (!selectedScenario) return;
+    
+    // Try to fetch from backend, but fallback to local data if disconnected (e.g. on Vercel)
     fetch(`${API_BASE}/api/scenario/${selectedScenario}`)
       .then(res => res.json())
       .then(data => {
         useSimulationStore.setState({ scenarioMetadata: data });
       })
-      .catch(e => console.error("Failed to fetch scenario metadata:", e));
+      .catch(e => {
+        console.warn("Backend disconnected, using offline scenario metadata.");
+        useSimulationStore.setState({ 
+          scenarioMetadata: fallbackMetadata[selectedScenario] 
+        });
+      });
   }, [selectedScenario]);
 
   useEffect(() => {
@@ -124,7 +151,7 @@ export default function ControlBar() {
             setSelectedScenario(e.target.value);
             resetSimulation();
           }}
-          disabled={loading || isRunning || !connected}
+          disabled={loading || isRunning}
           className="bg-[var(--color-bg-hover)] border border-[var(--color-border)] text-[var(--color-text-dim)] text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500"
         >
           <option value="credential_intrusion">Credential Intrusion (Default)</option>
