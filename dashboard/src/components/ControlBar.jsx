@@ -56,27 +56,32 @@ export default function ControlBar() {
   };
 
   const resetSimulation = async () => {
-    try {
-      await fetch(`${API_BASE}/api/simulation/reset`, { method: 'POST' });
-    } catch (e) {
-      console.error('Failed to reset backend:', e);
-    } finally {
-      // Always reset local state so the UI doesn't get stuck if the backend is down
-      reset();
+    // Always reset local state immediately so the UI works offline
+    reset();
+    if (connected) {
+      try {
+        await fetch(`${API_BASE}/api/simulation/reset`, { method: 'POST' });
+      } catch (e) {
+        console.error('Failed to reset backend:', e);
+      }
     }
   };
 
   const toggleDetection = async () => {
     const newVal = !detectionEnabled;
-    try {
-      await fetch(`${API_BASE}/api/detection/toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: newVal }),
-      });
-      setDetectionEnabled(newVal);
-    } catch (e) {
-      console.error('Toggle failed:', e);
+    // Optimistically update UI so the toggle works in Vercel/Demo mode
+    setDetectionEnabled(newVal);
+    
+    if (connected) {
+      try {
+        await fetch(`${API_BASE}/api/detection/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: newVal }),
+        });
+      } catch (e) {
+        console.error('Toggle failed:', e);
+      }
     }
   };
 
