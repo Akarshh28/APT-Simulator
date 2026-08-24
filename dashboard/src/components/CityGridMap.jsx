@@ -474,11 +474,29 @@ export default function CityGridMap() {
                       </span>
                     </>
                   ) : (
-                    !hoveredMeter.isOffline && (
+                    <>
                       <span className="flex justify-between">
-                        Load: <strong>{Math.floor(Math.random() * 20 + 30)} kW</strong>
+                        FWD (kWh): <strong className="text-[var(--color-text)]">{(Math.random() * 1000 + 5000).toFixed(1)}</strong>
                       </span>
-                    )
+                      <span className="flex justify-between">
+                        MD (kW): <strong className="text-[var(--color-text)]">{(Math.random() * 5 + 1).toFixed(2)}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        Load (W): <strong className="text-[var(--color-text)]">{hoveredMeter.isOffline ? 0 : Math.floor(Math.random() * 2000 + 3000)}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        BATT (V): <strong className="text-[var(--color-text)]">3.850V</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        DIAG: <strong className={hoveredMeter.isOffline ? 'text-[var(--color-danger)]' : 'text-[var(--color-safe)]'}>{hoveredMeter.isOffline ? 'Tamper' : 'Good'}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        WAN/HAN: <strong>{hoveredMeter.isOffline ? 'D/D' : 'C/C'}</strong>
+                      </span>
+                      <span className="flex justify-between mt-1 pt-1 border-t border-[var(--color-border-dim)]">
+                        PWR FAIL: <strong>{hoveredMeter.isOffline ? 1 : 0}</strong>
+                      </span>
+                    </>
                   )}
                 </div>
               </div>

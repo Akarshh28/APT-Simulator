@@ -27,19 +27,27 @@ export default function ControlBar() {
   const fallbackMetadata = {
     'credential_intrusion': {
       name: 'Credential Intrusion (Default)',
+      title: 'Credential Intrusion',
       description: 'An external attacker steals employee credentials to gain initial access, move laterally, and eventually disrupt the power grid.',
+      narrative: 'A classic IT-to-OT pivot. The attacker compromises an operator account, moves through the corporate network, and issues unauthorized mass commands to smart meters.'
     },
     'insider_threat': {
       name: 'Insider Threat',
+      title: 'Insider Threat',
       description: 'A rogue employee with physical access tampers with a substation and establishes a C2 beacon for remote sabotage.',
+      narrative: 'Bypassing the IT perimeter completely, an insider physically connects a rogue device (like a Raspberry Pi) to the OT network to manipulate meter data and trigger disconnects.'
     },
     'slow_burn_apt': {
       name: 'Slow-Burn APT',
+      title: 'Slow-Burn APT',
       description: 'A highly sophisticated nation-state actor quietly persists in the network for months before launching a coordinated grid shutdown.',
+      narrative: 'Focuses on stealth and persistence. The attacker implants malware in the HES server and waits for the optimal moment to cause maximum disruption with minimal early warnings.'
     },
     'false_positive': {
       name: 'False Positive (Normal Ops)',
+      title: 'False Positive (Normal Ops)',
       description: 'Simulates completely normal administrative activity to test if the detection engine incorrectly flags legitimate operations.',
+      narrative: 'A baseline test. Authorized operators perform routine maintenance, mass firmware updates, and isolated meter restarts. The AI should maintain a low risk score throughout.'
     }
   };
 
