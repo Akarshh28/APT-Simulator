@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import useSimulationStore from '../store/simulationStore';
 import useActiveState from '../hooks/useActiveState';
 
-const API_BASE = 'http://localhost:8003';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8003';
 
 export default function ControlBar() {
   const {
@@ -140,7 +140,7 @@ export default function ControlBar() {
 
         <button
           onClick={() => useSimulationStore.getState().triggerDemoMode()}
-          disabled={isRunning || !connected}
+          disabled={isRunning}
           className="px-4 py-1.5 text-sm font-bold rounded-lg transition-all
                      bg-[var(--color-danger)] hover:bg-red-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]
                      disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"

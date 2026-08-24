@@ -11,8 +11,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import useSimulationStore from '../store/simulationStore';
 
-const DETECTOR_WS_URL = 'ws://localhost:8003/ws/alerts';
-const HES_WS_URL = 'ws://localhost:8001/ws/live';
+const DETECTOR_WS_URL = import.meta.env.VITE_DETECTOR_WS_URL || 'ws://localhost:8003/ws/alerts';
+const HES_WS_URL = import.meta.env.VITE_HES_WS_URL || 'ws://localhost:8001/ws/live';
 const RECONNECT_DELAY = 3000;
 
 export function useWebSocket() {
