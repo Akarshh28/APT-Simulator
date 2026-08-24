@@ -7,6 +7,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import useActiveState from '../hooks/useActiveState';
+import useSimulationStore from '../store/simulationStore';
 import * as d3 from 'd3';
 
 const ZONE_LABELS = {
@@ -19,10 +20,12 @@ const ZONE_LABELS = {
 };
 
 export default function CityGridMap() {
-  const { meterStatuses, totalMeters, disconnectedCount, hasBlocked, stageStatuses, simulationState } = useActiveState();
+  const { meterStatuses, meterTelemetry, meterEvents, totalMeters, disconnectedCount, hasBlocked, stageStatuses, simulationState } = useActiveState();
+  const scenarioMetadata = useSimulationStore(s => s.scenarioMetadata);
   const isAttackActive = simulationState !== 'idle';
   const [hoveredZone, setHoveredZone] = useState(null);
   const [hoveredMeter, setHoveredMeter] = useState(null);
+  const [selectedMeter, setSelectedMeter] = useState(null);
 
   const totalConnected = useMemo(() => {
     const hasData = Object.keys(meterStatuses).length > 0;
@@ -176,6 +179,26 @@ export default function CityGridMap() {
           </div>
         </div>
       </div>
+
+      {/* Narrative Banner */}
+      {scenarioMetadata && scenarioMetadata.narrative && (
+        <div className="flex justify-center mb-3 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="bg-[var(--color-bg-hover)] border border-[var(--color-border-dim)] rounded-lg px-4 py-2 text-center w-full max-w-2xl">
+            <div className="text-[10px] font-bold text-[var(--color-accent)] uppercase tracking-wider mb-0.5">
+              Scenario: {scenarioMetadata.title}
+            </div>
+            {scenarioMetadata.description && (
+              <div className="text-xs font-semibold text-slate-200 mb-1">
+                {scenarioMetadata.description}
+              </div>
+            )}
+            <div className="text-[11px] text-slate-400 italic">
+              {scenarioMetadata.narrative}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Blocked Banner - Now a flex sibling so it pushes the map down without overlapping */}
       {hasBlocked && (
         <div className="flex justify-center mb-3 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
@@ -233,13 +256,18 @@ export default function CityGridMap() {
           {/* Central HES Hub and Attack Paths Layer */}
           <g className="attack-paths pointer-events-none">
             {/* Recon / Initial Access Path */}
-            {(stageStatuses['reconnaissance'] === 'active' || stageStatuses['reconnaissance'] === 'complete' || stageStatuses['initial_access'] === 'active' || stageStatuses['initial_access'] === 'complete') && (
+            {(stageStatuses['reconnaissance'] === 'active' || stageStatuses['reconnaissance'] === 'complete' || stageStatuses['initial_access'] === 'active' || stageStatuses['initial_access'] === 'complete' || (scenarioMetadata?.graph_config?.origin !== 'external' && stageStatuses['persistence'] === 'active')) && (
               <path 
-                d="M 60 340 L 430 200" 
+                d={
+                  scenarioMetadata?.graph_config?.origin === 'MDMS' ? "M 370 200 L 430 200" :
+                  ['A','B','C','D','E','F'].includes(scenarioMetadata?.graph_config?.origin) ?
+                    `M ${leaves.find(l => l.data.id === scenarioMetadata.graph_config.origin)?.x1 - 16 || 60} ${leaves.find(l => l.data.id === scenarioMetadata.graph_config.origin)?.y0 + 12 || 340} L 430 200` :
+                    "M 60 340 L 430 200"
+                }
                 fill="none" 
-                stroke={stageStatuses['initial_access'] ? "var(--color-danger)" : "var(--color-warning)"}
-                strokeWidth={stageStatuses['initial_access'] === 'active' ? "3" : "1.5"}
-                strokeDasharray={stageStatuses['initial_access'] === 'active' ? "6 6" : "4 4"}
+                stroke={stageStatuses['initial_access'] || stageStatuses['persistence'] ? "var(--color-danger)" : "var(--color-warning)"}
+                strokeWidth={(stageStatuses['initial_access'] === 'active' || stageStatuses['persistence'] === 'active') ? "3" : "1.5"}
+                strokeDasharray={(stageStatuses['initial_access'] === 'active' || stageStatuses['persistence'] === 'active') ? "6 6" : "4 4"}
                 className="animate-flow-dash"
                 markerEnd="url(#arrow-red)"
               />
@@ -250,12 +278,17 @@ export default function CityGridMap() {
               <circle cx="430" cy="200" r="45" fill="none" stroke="var(--color-danger)" strokeWidth="1.5" strokeDasharray="4 8" className="animate-[spin_4s_linear_infinite]" opacity="0.6" />
             )}
 
-            {/* Command & Control Path (Zone D to Hub) */}
+            {/* Command & Control Path */}
             {(stageStatuses['command_control'] === 'active' || stageStatuses['command_control'] === 'complete') && (
               <path 
-                d={`M ${leaves.find(l => l.data.id === 'D')?.x1 - 16 || 200} ${leaves.find(l => l.data.id === 'D')?.y0 + 12 || 300} L 430 200`} 
+                d={
+                  scenarioMetadata?.graph_config?.origin === 'MDMS' ? "M 370 200 L 60 340" :
+                  ['A','B','C','D','E','F'].includes(scenarioMetadata?.graph_config?.origin) ?
+                    `M 430 200 L ${leaves.find(l => l.data.id === scenarioMetadata.graph_config.origin)?.x1 - 16 || 200} ${leaves.find(l => l.data.id === scenarioMetadata.graph_config.origin)?.y0 + 12 || 300}` :
+                    "M 430 200 L 60 340"
+                }
                 fill="none" stroke="var(--color-danger)" strokeWidth="2" strokeDasharray="2 4"
-                className="animate-flow-dash" markerEnd="url(#arrow-red)"
+                className="animate-flow-dash-reverse" markerStart="url(#arrow-red)"
               />
             )}
           </g>
@@ -334,10 +367,13 @@ export default function CityGridMap() {
                 fill={dot.isOffline ? 'var(--color-danger)' : 'var(--color-safe)'}
                 opacity={dot.isOffline ? 0.95 : 0.5}
                 className={`transition-all duration-700 cursor-pointer ${
+                  selectedMeter?.id === dot.id ? 'stroke-[var(--color-text)] stroke-[1.5px]' : ''
+                } ${
                   dot.isOffline ? 'meter-red' : 'animate-pulse-slow'
                 }`}
                 onMouseEnter={() => setHoveredMeter(dot)}
                 onMouseLeave={() => setHoveredMeter(null)}
+                onClick={() => setSelectedMeter(dot)}
               />
             );
           })}
@@ -345,7 +381,7 @@ export default function CityGridMap() {
           {/* Central SOC Hub (HES & MDMS) */}
           <g className="central-hub">
             {/* Link between HES and MDMS */}
-            <path d="M 370 200 L 430 200" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="2 2" className="animate-[flow-dash_2s_linear_infinite]" />
+            <path d="M 430 200 L 370 200" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="2 2" className="animate-[flow-dash_2s_linear_infinite]" />
 
             {/* MDMS Node */}
             <g transform="translate(370, 200)" className="cursor-pointer transition-all duration-300 hover:scale-110">
@@ -384,37 +420,71 @@ export default function CityGridMap() {
         </svg>
 
         {/* Hover Tooltip for Meter */}
-        {hoveredMeter && (
-          <div 
-            className="absolute z-10 pointer-events-none transform -translate-x-1/2 -translate-y-full pb-2 transition-all duration-100"
-            style={{ 
-              left: `${(hoveredMeter.x / mapWidth) * 100}%`, 
-              top: `${(hoveredMeter.y / mapHeight) * 100}%` 
-            }}
-          >
-            <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl rounded px-3 py-2 text-xs backdrop-blur-md whitespace-nowrap min-w-[120px]">
-              <div className="font-bold text-[var(--color-text)] mb-1 flex items-center justify-between">
-                <span>{hoveredMeter.displayId}</span>
-                <span className={hoveredMeter.isOffline ? 'text-[var(--color-danger)]' : 'text-[var(--color-safe)]'}>
-                  ●
-                </span>
-              </div>
-              <div className="text-[10px] text-[var(--color-text-dim)] flex flex-col gap-0.5">
-                <span className="uppercase tracking-wider font-mono">{ZONE_LABELS[hoveredMeter.zone]}</span>
-                <span className="flex justify-between border-t border-[var(--color-border-dim)] mt-1 pt-1">
-                  Status: <strong className={hoveredMeter.isOffline ? 'text-[var(--color-danger)]' : 'text-[var(--color-safe)]'}>
-                    {hoveredMeter.isOffline ? 'OFFLINE' : 'ONLINE'}
-                  </strong>
-                </span>
-                {!hoveredMeter.isOffline && (
-                  <span className="flex justify-between">
-                    Load: <strong>{Math.floor(Math.random() * 20 + 30)} kW</strong>
+        {hoveredMeter && (() => {
+          const telemetryList = Object.values(meterTelemetry || {}).filter(t => t.zone === hoveredMeter.zone);
+          const idx = parseInt(hoveredMeter.id.split('-')[1], 10);
+          const telemetry = telemetryList.length > 0 ? telemetryList[idx % telemetryList.length] : null;
+          
+          return (
+            <div 
+              className="absolute z-10 pointer-events-none transform -translate-x-1/2 -translate-y-full pb-2 transition-all duration-100"
+              style={{ 
+                left: `${(hoveredMeter.x / mapWidth) * 100}%`, 
+                top: `${(hoveredMeter.y / mapHeight) * 100}%` 
+              }}
+            >
+              <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl rounded px-3 py-2 text-xs backdrop-blur-md whitespace-nowrap min-w-[180px]">
+                <div className="font-bold text-[var(--color-text)] mb-1 flex items-center justify-between border-b border-[var(--color-border-dim)] pb-1">
+                  <span>{telemetry ? telemetry.meter_id : hoveredMeter.displayId}</span>
+                  <span className={hoveredMeter.isOffline ? 'text-[var(--color-danger)]' : 'text-[var(--color-safe)]'}>
+                    ●
                   </span>
-                )}
+                </div>
+                <div className="text-[10px] text-[var(--color-text-dim)] flex flex-col gap-0.5">
+                  <span className="uppercase tracking-wider font-mono mb-1">{ZONE_LABELS[hoveredMeter.zone]}</span>
+                  
+                  <span className="flex justify-between">
+                    Status: <strong className={hoveredMeter.isOffline ? 'text-[var(--color-danger)]' : 'text-[var(--color-safe)]'}>
+                      {hoveredMeter.isOffline ? 'OFFLINE' : 'ONLINE'}
+                    </strong>
+                  </span>
+                  
+                  {telemetry ? (
+                    <>
+                      <span className="flex justify-between">
+                        FWD (kWh): <strong className="text-[var(--color-text)]">{telemetry.consumption_kwh.toFixed(1)}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        MD (kW): <strong className="text-[var(--color-text)]">{telemetry.max_demand_kw.toFixed(2)}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        Load (W): <strong className="text-[var(--color-text)]">{telemetry.active_power_w.toFixed(0)}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        BATT (V): <strong className={telemetry.battery_voltage < 3.5 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'}>{telemetry.battery_voltage.toFixed(3)}V</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        DIAG: <strong className={telemetry.diag_status === 'Good' ? 'text-[var(--color-safe)]' : 'text-[var(--color-danger)]'}>{telemetry.diag_status}</strong>
+                      </span>
+                      <span className="flex justify-between">
+                        WAN/HAN: <strong>{telemetry.wan_status.charAt(0)}/{telemetry.han_status.charAt(0)}</strong>
+                      </span>
+                      <span className="flex justify-between mt-1 pt-1 border-t border-[var(--color-border-dim)]">
+                        PWR FAIL: <strong>{hoveredMeter.isOffline ? (telemetry.power_fail_count + 1) : telemetry.power_fail_count}</strong>
+                      </span>
+                    </>
+                  ) : (
+                    !hoveredMeter.isOffline && (
+                      <span className="flex justify-between">
+                        Load: <strong>{Math.floor(Math.random() * 20 + 30)} kW</strong>
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Hover Tooltip for Zone Summary */}
         {hoveredZone && !hoveredMeter && (
@@ -442,6 +512,62 @@ export default function CityGridMap() {
             </div>
           </div>
         )}
+
+        {/* Selected Meter Event Log Panel */}
+        {selectedMeter && (() => {
+          const telemetryList = Object.values(meterTelemetry || {}).filter(t => t.zone === selectedMeter.zone);
+          const idx = parseInt(selectedMeter.id.split('-')[1], 10);
+          const telemetry = telemetryList.length > 0 ? telemetryList[idx % telemetryList.length] : null;
+          const realMeterId = telemetry ? telemetry.meter_id : selectedMeter.displayId;
+          const events = meterEvents?.[realMeterId] || [];
+
+          return (
+            <div className="absolute top-0 right-0 w-72 h-full bg-[var(--color-bg-panel)] border-l border-[var(--color-border)] shadow-2xl z-20 flex flex-col transform transition-transform duration-300">
+              <div className="p-3 border-b border-[var(--color-border-dim)] flex justify-between items-center bg-[var(--color-bg-card)]">
+                <div>
+                  <h3 className="font-bold text-sm text-[var(--color-text)] flex items-center gap-2">
+                    <span className="text-[16px]">📑</span> Event Log
+                  </h3>
+                  <div className="text-[10px] text-[var(--color-text-dim)] font-mono mt-0.5">{realMeterId}</div>
+                </div>
+                <button 
+                  onClick={() => setSelectedMeter(null)}
+                  className="w-6 h-6 rounded-full hover:bg-[var(--color-border)] flex items-center justify-center transition-colors text-[var(--color-text-dim)]"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin">
+                {events.length === 0 ? (
+                  <div className="text-xs text-[var(--color-text-muted)] italic text-center mt-4 p-4 border border-dashed border-[var(--color-border-dim)] rounded">
+                    No recent events logged for this meter.
+                  </div>
+                ) : (
+                  events.map((ev, i) => (
+                    <div key={i} className="text-[11px] bg-[var(--color-bg-card)] p-2.5 rounded border border-[var(--color-border-dim)] shadow-sm">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="font-bold text-[var(--color-text)] uppercase">{ev.event.replace(/_/g, ' ')}</span>
+                        <span className="text-[9px] text-[var(--color-text-muted)] font-mono">
+                          {new Date(ev.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second:'2-digit' })}
+                        </span>
+                      </div>
+                      {ev.reason && (
+                        <div className="text-[10px] text-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] px-1.5 py-0.5 rounded mt-1">
+                          Reason: {ev.reason}
+                        </div>
+                      )}
+                      {ev.token && (
+                        <div className="text-[10px] text-[var(--color-warning)] font-mono bg-[color-mix(in_srgb,var(--color-warning)_10%,transparent)] px-1.5 py-0.5 rounded mt-1">
+                          Token: {ev.token}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </div>

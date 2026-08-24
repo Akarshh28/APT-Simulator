@@ -124,6 +124,9 @@ export function useWebSocket() {
 
       case 'simulation_state':
         useSimulationStore.getState().setSimulationState(payload.state);
+        if (payload.scenario_metadata) {
+          useSimulationStore.getState().setScenarioMetadata(payload.scenario_metadata);
+        }
         break;
 
       case 'system':
@@ -131,6 +134,9 @@ export function useWebSocket() {
           useSimulationStore.getState().setDetectionEnabled(payload.detection_enabled ?? true);
           if (payload.alerts) {
             useSimulationStore.getState().setAlerts(payload.alerts);
+          }
+          if (payload.scenario_metadata) {
+            useSimulationStore.getState().setScenarioMetadata(payload.scenario_metadata);
           }
         }
         break;
@@ -147,6 +153,13 @@ export function useWebSocket() {
           useSimulationStore.getState().updateMeterStatus(payload);
           useSimulationStore.getState().updateDisconnectedCount();
         }
+        break;
+
+      case 'telemetry':
+        useSimulationStore.getState().updateMeterTelemetry(payload);
+        break;
+      case 'meter_event':
+        useSimulationStore.getState().addMeterEvent(payload);
         break;
 
       case 'system':

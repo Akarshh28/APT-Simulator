@@ -1,0 +1,57 @@
+name: "insider_threat"
+title: "Insider Threat (Rogue Admin)"
+description: "An authorized operator uses their privileges to establish a backdoor, move laterally, and execute a mass disconnect."
+narrative: "A trusted company employee with high access (like a network admin) goes rogue. Because they already have passwords and access, they skip the initial break-in and use their own computer to shut down electricity meters, making it very hard to detect."
+duration_minutes: 3
+time_compression: 2880  
+
+graph_config:
+  origin: "MDMS"
+  compromised_identity: "admin"
+  c2_node: "c2_host"
+
+detection_weights:
+  login_anomaly: 0.1
+  graph_anomaly: 1.5
+  beacon_detection: 1.0
+  isolation_forest: 1.2
+  mass_command: 1.0
+  physical_tamper: 1.0
+
+stages:
+  - name: persistence
+    technique_id: T1098
+    tactic: Persistence
+    description: "Rogue admin creates a backup account for future access"
+    delay_after: 5
+    config:
+      rogue_account: 
+        username: "svc_backup"
+        password: "Sup3rS3cur3!"
+        role: "admin"
+        
+  - name: lateral_movement
+    technique_id: T0886
+    tactic: Lateral Movement
+    description: "Admin accesses MDMS to retrieve bulk customer data"
+    delay_after: 5
+    config: {}
+    
+  - name: command_control
+    technique_id: T0869
+    tactic: C2
+    description: "Admin deploys a beaconing script to maintain control"
+    duration_seconds: 30
+    delay_after: 3
+    config:
+      beacon_interval_seconds: 47
+      fake_meter_id: "SM-X-9999"
+      
+  - name: impact
+    technique_id: T0826
+    tactic: Impact
+    description: "Admin issues a mass disconnect command across all zones"
+    delay_after: 0
+    config:
+      zone_order: ["C", "D"]
+      disconnect_batch_size: 100

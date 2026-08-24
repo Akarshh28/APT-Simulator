@@ -13,68 +13,51 @@ import useActiveState from '../hooks/useActiveState';
 /* ─── Static Metadata ─────────────────────────────────────── */
 
 const NODE_META = {
-  operator1:  { icon: '👤', label: 'operator1',    role: 'HES Operator',       ip: '10.0.1.12',    proto: 'SSH / RDP' },
-  admin:      { icon: '👤', label: 'admin',         role: 'MDMS Admin',         ip: '10.0.1.5',     proto: 'HTTPS' },
-  svc_backup: { icon: '🔧', label: 'svc_backup',    role: 'Service Account',    ip: '10.0.1.20',    proto: 'SSH' },
-  HES:        { icon: '🖥️', label: 'HES',           role: 'Head End System',    ip: '192.168.50.10', proto: 'DNP3 / TLS' },
-  MDMS:       { icon: '🖥️', label: 'MDMS',          role: 'MDMS Server',        ip: '192.168.50.11', proto: 'REST API' },
-  meters:     { icon: '⚡',  label: 'Meter Fleet',   role: 'Smart Meters (500)', ip: '10.100.x.x',    proto: 'DLMS/COSEM' },
-  rogue_acct: { icon: '👻', label: 'rogue_op',      role: 'Rogue Account',      ip: '10.0.1.99',    proto: 'SSH / RDP' },
-  c2_host:    { icon: '☠️', label: 'C2 Host',       role: 'External C2 Server', ip: '203.0.113.42', proto: 'Custom C2' },
+  operator1: { icon: '👤', label: 'operator1', role: 'HES Operator', ip: '10.0.1.12', proto: 'SSH / RDP' },
+  admin: { icon: '👤', label: 'admin', role: 'MDMS Admin', ip: '10.0.1.5', proto: 'HTTPS' },
+  svc_backup: { icon: '🔧', label: 'svc_backup', role: 'Service Account', ip: '10.0.1.20', proto: 'SSH' },
+  HES: { icon: '🖥️', label: 'HES', role: 'Head End System', ip: '192.168.50.10', proto: 'DNP3 / TLS' },
+  MDMS: { icon: '🖥️', label: 'MDMS', role: 'MDMS Server', ip: '192.168.50.11', proto: 'REST API' },
+  meters: { icon: '⚡', label: 'Meter Fleet', role: 'Smart Meters (500)', ip: '10.100.x.x', proto: 'DLMS/COSEM' },
+  rogue_acct: { icon: '👻', label: 'rogue_op', role: 'Rogue Account', ip: '10.0.1.99', proto: 'SSH / RDP' },
+  c2_host: { icon: '☠️', label: 'C2 Host', role: 'External C2 Server', ip: '203.0.113.42', proto: 'Custom C2' },
 };
 
 const NODE_COLORS = {
-  account:  '#22d3ee',   // cyan
-  service:  '#38bdf8',   // blue
-  fleet:    '#f59e0b',   // amber
-  rogue:    '#a855f7',   // purple
+  account: '#22d3ee',   // cyan
+  service: '#38bdf8',   // blue
+  fleet: '#f59e0b',   // amber
+  rogue: '#a855f7',   // purple
   external: '#ef4444',   // red
 };
 
 const INITIAL_POSITIONS = {
-  operator1:  { x: 0.25, y: 0.15 },
-  admin:      { x: 0.75, y: 0.15 },
+  operator1: { x: 0.25, y: 0.15 },
+  admin: { x: 0.75, y: 0.15 },
   svc_backup: { x: 0.50, y: 0.10 },
-  HES:        { x: 0.30, y: 0.50 },
-  MDMS:       { x: 0.70, y: 0.50 },
-  meters:     { x: 0.50, y: 0.85 },
+  HES: { x: 0.30, y: 0.50 },
+  MDMS: { x: 0.70, y: 0.50 },
+  meters: { x: 0.50, y: 0.85 },
   rogue_acct: { x: 0.10, y: 0.35 },
-  c2_host:    { x: 0.05, y: 0.65 },
+  c2_host: { x: 0.05, y: 0.65 },
 };
 
-/* ─── Baseline topology (always visible in idle) ─────────── */
-
-const BASELINE_NODES = [
-  { id: 'operator1',  type: 'account' },
-  { id: 'admin',      type: 'account' },
-  { id: 'svc_backup', type: 'account' },
-  { id: 'HES',        type: 'service' },
-  { id: 'MDMS',       type: 'service' },
-  { id: 'meters',     type: 'fleet' },
-];
-
-const BASELINE_EDGES = [
-  { source: 'operator1',  target: 'HES',    label: 'Normal access',          is_anomalous: false },
-  { source: 'admin',      target: 'MDMS',   label: 'Admin access',           is_anomalous: false },
-  { source: 'svc_backup', target: 'HES',    label: 'Scheduled backup',       is_anomalous: false },
-  { source: 'HES',        target: 'MDMS',   label: 'System-to-system sync',  is_anomalous: false },
-  { source: 'HES',        target: 'meters', label: 'Meter telemetry',        is_anomalous: false },
-];
+/* ─── Baseline topologies are now dynamically generated ─── */
 
 /* ─── Edge tooltips for anomalous connections ─────────────── */
 
 const ANOMALY_TOOLTIPS = {
-  'rogue_acct->HES':     'Rogue account accessing HES — unknown credential created during Persistence phase',
-  'operator1->MDMS':     'Unexpected: operator accounts should never access MDMS directly — flagged by Graph Anomaly detector',
-  'rogue_acct->MDMS':    'Rogue account performing lateral movement to MDMS — cross-system privilege escalation',
-  'c2_host->operator1':  'C2 beaconing: compromised operator1 communicating with external command server',
+  'rogue_acct->HES': 'Rogue account accessing HES — unknown credential created during Persistence phase',
+  'operator1->MDMS': 'Unexpected: operator accounts should never access MDMS directly — flagged by Graph Anomaly detector',
+  'rogue_acct->MDMS': 'Rogue account performing lateral movement to MDMS — cross-system privilege escalation',
+  'c2_host->operator1': 'C2 beaconing: compromised operator1 communicating with external command server',
   'c2_host->rogue_acct': 'C2 beaconing: rogue account receiving instructions from external command server',
 };
 
 /* ─── Component ───────────────────────────────────────────── */
 
 export default function NetworkGraph() {
-  const { simulationState, stageStatuses, graphData } = useActiveState();
+  const { simulationState, stageStatuses, scenarioMetadata } = useActiveState();
   const svgRef = useRef(null);
   const simRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
@@ -82,10 +65,50 @@ export default function NetworkGraph() {
 
   /* ── Derive visible nodes & edges from stage progression ── */
   const getActiveGraph = useCallback(() => {
-    const nodes = [...BASELINE_NODES];
-    const edges = [...BASELINE_EDGES];
+    const nodes = [
+      { id: 'HES', type: 'service' },
+      { id: 'MDMS', type: 'service' },
+      { id: 'meters', type: 'fleet' },
+    ];
+    const edges = [
+      { source: 'HES', target: 'meters', label: 'Meter telemetry', is_anomalous: false },
+      { source: 'MDMS', target: 'HES', label: 'System-to-system sync', is_anomalous: false },
+    ];
     const compromised = new Set();
-    const appeared = new Set();      // newly appearing node IDs (for animation)
+    const appeared = new Set();
+    
+    const config = scenarioMetadata?.graph_config || {
+      compromised_identity: 'operator1',
+      c2_node: 'c2_host',
+      origin: 'external',
+    };
+    
+    const targetId = config.compromised_identity;
+    const c2Id = config.c2_node || 'c2_host';
+
+    // Set up identity-specific metadata and baseline connections
+    if (targetId === 'operator1') {
+      nodes.push({ id: 'operator1', type: 'account' });
+      edges.push({ source: 'operator1', target: 'HES', label: 'Normal access', is_anomalous: false });
+    } else if (targetId === 'admin') {
+      nodes.push({ id: 'admin', type: 'account' });
+      edges.push({ source: 'admin', target: 'MDMS', label: 'Admin access', is_anomalous: false });
+    } else if (targetId.startsWith('field_tech')) {
+      nodes.push({ id: targetId, type: 'account' });
+      if (!NODE_META[targetId]) {
+        NODE_META[targetId] = { icon: '🔧', label: targetId, role: 'Field Technician', ip: '10.0.1.33', proto: 'VPN' };
+        INITIAL_POSITIONS[targetId] = { x: 0.15, y: 0.85 };
+      }
+      edges.push({ source: targetId, target: 'meters', label: 'Field Access', is_anomalous: false });
+    } else {
+      // Fallback
+      nodes.push({ id: targetId, type: 'account' });
+      if (!NODE_META[targetId]) {
+        NODE_META[targetId] = { icon: '👤', label: targetId, role: 'User', ip: '10.0.1.x', proto: 'VPN' };
+        INITIAL_POSITIONS[targetId] = { x: 0.15, y: 0.15 };
+      }
+      edges.push({ source: targetId, target: 'HES', label: 'Normal access', is_anomalous: false });
+    }
 
     // Gather completed or active stages
     const stageActive = (id) => {
@@ -93,34 +116,45 @@ export default function NetworkGraph() {
       return s === 'active' || s === 'complete' || s === 'blocked';
     };
 
-    // Initial Access — mark operator1 compromised
-    if (stageActive('initial_access')) {
-      compromised.add('operator1');
+    // Initial Access / Persistence setup
+    if (stageActive('initial_access') || (stageActive('persistence') && targetId === 'admin')) {
+      compromised.add(targetId);
     }
 
     // Persistence — rogue_acct appears
     if (stageActive('persistence')) {
+      if (targetId !== 'admin') {
+         compromised.add(targetId); // ensure it's marked
+      }
       nodes.push({ id: 'rogue_acct', type: 'rogue' });
       appeared.add('rogue_acct');
-      edges.push({ source: 'rogue_acct', target: 'HES', label: ANOMALY_TOOLTIPS['rogue_acct->HES'], is_anomalous: true });
+      edges.push({ source: 'rogue_acct', target: 'HES', label: ANOMALY_TOOLTIPS['rogue_acct->HES'] || 'Rogue account accessing HES', is_anomalous: true });
       compromised.add('rogue_acct');
     }
 
     // Lateral Movement — anomalous cross-access edges
     if (stageActive('lateral_movement')) {
-      edges.push({ source: 'operator1', target: 'MDMS', label: ANOMALY_TOOLTIPS['operator1->MDMS'], is_anomalous: true });
+      if (targetId === 'operator1') {
+        edges.push({ source: 'operator1', target: 'MDMS', label: ANOMALY_TOOLTIPS['operator1->MDMS'] || 'Unexpected MDMS access', is_anomalous: true });
+      } else if (targetId === 'admin') {
+        edges.push({ source: 'admin', target: 'HES', label: 'Admin accessing HES unexpectedly', is_anomalous: true });
+      } else if (targetId.startsWith('field_tech')) {
+        edges.push({ source: targetId, target: 'MDMS', label: 'Field tech accessing MDMS', is_anomalous: true });
+      }
       if (nodes.some(n => n.id === 'rogue_acct')) {
-        edges.push({ source: 'rogue_acct', target: 'MDMS', label: ANOMALY_TOOLTIPS['rogue_acct->MDMS'], is_anomalous: true });
+        edges.push({ source: 'rogue_acct', target: 'MDMS', label: ANOMALY_TOOLTIPS['rogue_acct->MDMS'] || 'Rogue lateral movement', is_anomalous: true });
       }
     }
 
     // Command & Control — c2_host appears + beaconing edges
-    if (stageActive('command_control')) {
-      nodes.push({ id: 'c2_host', type: 'external' });
-      appeared.add('c2_host');
-      edges.push({ source: 'c2_host', target: 'operator1', label: ANOMALY_TOOLTIPS['c2_host->operator1'], is_anomalous: true, is_c2: true });
+    if (stageActive('command_control') && c2Id) {
+      if (!nodes.some(n => n.id === c2Id)) {
+        nodes.push({ id: c2Id, type: 'external' });
+        appeared.add(c2Id);
+      }
+      edges.push({ source: c2Id, target: targetId, label: ANOMALY_TOOLTIPS[`${c2Id}->${targetId}`] || `C2 beaconing: ${targetId} communicating with C2`, is_anomalous: true, is_c2: true });
       if (nodes.some(n => n.id === 'rogue_acct')) {
-        edges.push({ source: 'c2_host', target: 'rogue_acct', label: ANOMALY_TOOLTIPS['c2_host->rogue_acct'], is_anomalous: true, is_c2: true });
+        edges.push({ source: c2Id, target: 'rogue_acct', label: ANOMALY_TOOLTIPS[`${c2Id}->rogue_acct`] || 'C2 beaconing to rogue account', is_anomalous: true, is_c2: true });
       }
     }
 
@@ -142,7 +176,7 @@ export default function NetworkGraph() {
     }
 
     return { nodes, edges, compromised, appeared };
-  }, [stageStatuses]);
+  }, [stageStatuses, scenarioMetadata]);
 
   /* ── Resize observer ──────────────────────────────────────── */
   useEffect(() => {
@@ -179,12 +213,12 @@ export default function NetworkGraph() {
     if (simRef.current) simRef.current.stop();
 
     const simulation = d3.forceSimulation(simNodes)
-      .force('link', d3.forceLink(simEdges).id(d => d.id).distance(width * 0.22).strength(0.4))
-      .force('charge', d3.forceManyBody().strength(-width * 0.5))
+      .force('link', d3.forceLink(simEdges).id(d => d.id).distance(width * 0.28).strength(0.3))
+      .force('charge', d3.forceManyBody().strength(-width * 1.0))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide(28))
-      .force('x', d3.forceX(d => (INITIAL_POSITIONS[d.id]?.x ?? 0.5) * width).strength(0.12))
-      .force('y', d3.forceY(d => (INITIAL_POSITIONS[d.id]?.y ?? 0.5) * height).strength(0.12))
+      .force('collision', d3.forceCollide(32))
+      .force('x', d3.forceX(d => (INITIAL_POSITIONS[d.id]?.x ?? 0.5) * width).strength(0.08))
+      .force('y', d3.forceY(d => (INITIAL_POSITIONS[d.id]?.y ?? 0.5) * height).strength(0.08))
       .alphaDecay(0.03)
       .velocityDecay(0.4);
 
@@ -194,8 +228,8 @@ export default function NetworkGraph() {
 
     simulation.on('tick', () => {
       // Constrain nodes within SVG bounds (with safe margin for labels and rings)
-      const marginX = 60;
-      const marginY = 50;
+      const marginX = 45;
+      const marginY = 35;
       simNodes.forEach(n => {
         n.x = clamp(n.x, marginX, width - marginX);
         n.y = clamp(n.y, marginY, height - marginY);
@@ -368,25 +402,23 @@ export default function NetworkGraph() {
                 <div className="text-[8px] font-mono text-[var(--color-text-dim)] flex justify-between">
                   <span>Proto:</span> <span className="text-[var(--color-text)]">{tooltip.proto}</span>
                 </div>
-                <div className={`text-[8.5px] font-bold mt-1 text-center py-0.5 rounded ${
-                  tooltip.isCompromised
+                <div className={`text-[8.5px] font-bold mt-1 text-center py-0.5 rounded ${tooltip.isCompromised
                     ? 'bg-red-500/20 text-red-400'
                     : tooltip.nodeType === 'rogue'
-                    ? 'bg-purple-500/20 text-purple-400'
-                    : tooltip.nodeType === 'external'
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-green-500/10 text-[var(--color-safe)]'
-                }`}>
+                      ? 'bg-purple-500/20 text-purple-400'
+                      : tooltip.nodeType === 'external'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-green-500/10 text-[var(--color-safe)]'
+                  }`}>
                   {tooltip.isCompromised ? '⚠️ COMPROMISED' :
-                   tooltip.nodeType === 'rogue' ? '👻 Rogue — Attacker Created' :
-                   tooltip.nodeType === 'external' ? '☠️ External Threat' :
-                   '✓ Healthy'}
+                    tooltip.nodeType === 'rogue' ? '👻 Rogue — Attacker Created' :
+                      tooltip.nodeType === 'external' ? '☠️ External Threat' :
+                        '✓ Healthy'}
                 </div>
               </div>
             ) : (
-              <div className={`bg-[var(--color-bg-panel)] border rounded-lg p-2 shadow-2xl max-w-[200px] ${
-                tooltip.isAnomalous ? 'border-red-500/40' : 'border-[var(--color-border-dim)]'
-              }`}>
+              <div className={`bg-[var(--color-bg-panel)] border rounded-lg p-2 shadow-2xl max-w-[200px] ${tooltip.isAnomalous ? 'border-red-500/40' : 'border-[var(--color-border-dim)]'
+                }`}>
                 <div className="text-[9px] leading-tight text-[var(--color-text)]">{tooltip.label}</div>
                 {tooltip.isAnomalous && (
                   <div className="text-[8px] font-bold mt-1 text-red-400">🔴 Anomalous Connection</div>

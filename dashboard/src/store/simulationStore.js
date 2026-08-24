@@ -7,15 +7,20 @@
 
 import { create } from 'zustand';
 
-// MITRE ATT&CK stages in order
-export const ATTACK_STAGES = [
-  { id: 'reconnaissance', name: 'Reconnaissance', technique: 'T0846', tactic: 'Discovery', icon: '🔍' },
-  { id: 'initial_access', name: 'Initial Access', technique: 'T0859', tactic: 'Initial Access', icon: '🔓' },
-  { id: 'persistence', name: 'Persistence', technique: 'T1098', tactic: 'Persistence', icon: '⚓' },
-  { id: 'lateral_movement', name: 'Lateral Movement', technique: 'T0886', tactic: 'Lateral Movement', icon: '↔️' },
-  { id: 'command_control', name: 'Command & Control', technique: 'T0869', tactic: 'C2', icon: '📡' },
-  { id: 'impact', name: 'Impact', technique: 'T0826', tactic: 'Impact', icon: '💥' },
-];
+// MITRE ATT&CK stages definitions
+export const STAGE_DEFINITIONS = {
+  reconnaissance: { id: 'reconnaissance', name: 'Reconnaissance', technique: 'T0846', tactic: 'Discovery', icon: '🔍' },
+  physical_tampering: { id: 'physical_tampering', name: 'Physical Tamper', technique: 'T0834', tactic: 'Initial Access', icon: '🔌' },
+  initial_access: { id: 'initial_access', name: 'Initial Access', technique: 'T0859', tactic: 'Initial Access', icon: '🔓' },
+  persistence: { id: 'persistence', name: 'Persistence', technique: 'T1098', tactic: 'Persistence', icon: '⚓' },
+  lateral_movement: { id: 'lateral_movement', name: 'Lateral Movement', technique: 'T0886', tactic: 'Lateral Movement', icon: '↔️' },
+  command_control: { id: 'command_control', name: 'Command & Control', technique: 'T0869', tactic: 'C2', icon: '📡' },
+  impact: { id: 'impact', name: 'Impact', technique: 'T0826', tactic: 'Impact', icon: '💥' },
+  benign_activity: { id: 'benign_activity', name: 'Normal Activity', technique: 'N/A', tactic: 'Operations', icon: '👨‍💻' },
+};
+
+// Default fallback list
+export const ATTACK_STAGES = Object.values(STAGE_DEFINITIONS).slice(0, 7);
 
 const useSimulationStore = create((set, get) => ({
   // ─── Connection State ───────────────────────────────────
@@ -31,7 +36,7 @@ const useSimulationStore = create((set, get) => ({
   isRunning: false,
   isPaused: false,
   isDemoMode: false,
-  simulationState: 'idle', // 'idle' | 'running' | 'blocked' | 'failed' | 'succeeded'
+  simulationState: 'idle', // 'idle' | 'running' | 'blocked' | 'failed' | 'succeeded' | 'normal_ops'
   setRunning: (val) => set({ isRunning: val }),
   setPaused: (val) => set({ isPaused: val }),
   setDemoMode: (val) => set({ isDemoMode: val }),
@@ -42,6 +47,24 @@ const useSimulationStore = create((set, get) => ({
   scrubIndex: 0,
   setScrubbing: (val) => set({ isScrubbing: val }),
   setScrubIndex: (val) => set({ scrubIndex: val }),
+
+  // ─── Scenario State ────────────────────────────────────
+  selectedScenario: 'credential_intrusion',
+  scenarioMetadata: null,
+  activeStages: ATTACK_STAGES,
+  setSelectedScenario: (val) => set({ selectedScenario: val }),
+  setScenarioMetadata: (val) => {
+    let stages = ATTACK_STAGES;
+    if (val && val.stages) {
+      stages = val.stages.map(s => {
+        const stageName = typeof s === 'string' ? s : s.name;
+        const stageDesc = typeof s === 'object' ? s.description : '';
+        const def = STAGE_DEFINITIONS[stageName] || { id: stageName, name: stageName, technique: 'N/A', tactic: 'N/A', icon: '⚙️' };
+        return { ...def, description: stageDesc };
+      });
+    }
+    set({ scenarioMetadata: val, activeStages: stages });
+  },
 
   // ─── Attack Stages ─────────────────────────────────────
   stageStatuses: {},  // { stage_id: 'pending' | 'active' | 'complete' | 'error' }
@@ -120,6 +143,26 @@ const useSimulationStore = create((set, get) => ({
     }
     return s;
   }),
+  
+  // ─── Meter Telemetry & Events ──────────────────────────
+  meterTelemetry: {}, // { meter_id: { ...telemetryData } }
+  updateMeterTelemetry: (reading) => set((s) => ({
+    meterTelemetry: { ...s.meterTelemetry, [reading.meter_id]: reading }
+  })),
+
+  meterEvents: {}, // { meter_id: [event1, event2] }
+  addMeterEvent: (event) => set((s) => {
+    const meterId = event.meter_id;
+    if (!meterId) return s;
+    const existing = s.meterEvents[meterId] || [];
+    return {
+      meterEvents: {
+        ...s.meterEvents,
+        [meterId]: [event, ...existing].slice(0, 50) // keep last 50 events
+      }
+    };
+  }),
+
   totalMeters: 500,
   disconnectedCount: 0,
   updateDisconnectedCount: () => {
@@ -138,26 +181,32 @@ const useSimulationStore = create((set, get) => ({
   timelinePosition: 0,
   setTimelinePosition: (pos) => set({ timelinePosition: pos }),
 
-  reset: () => set({
-    isRunning: false,
-    isPaused: false,
-    isDemoMode: false,
-    simulationState: 'idle',
-    isScrubbing: false,
-    scrubIndex: 0,
-    stageStatuses: {},
-    riskScore: 0,
-    riskHistory: [],
-    signals: {},
-    hasAlerted: false,
-    hasBlocked: false,
-    alerts: [],
-    attackEvents: [],
-    meterStatuses: {},
-    disconnectedCount: 0,
-    graphData: { nodes: [], edges: [] },
-    timelinePosition: 0,
-  }),
+  reset: () => {
+    set((s) => ({
+      // Preserve connection, detection toggle, and selected scenario
+      isRunning: false,
+      isPaused: false,
+      isDemoMode: false,
+      simulationState: 'idle',
+      isScrubbing: false,
+      scrubIndex: 0,
+      stageStatuses: {},
+      riskScore: 0,
+      riskHistory: [],
+      signals: {},
+      hasAlerted: false,
+      hasBlocked: false,
+      alerts: [],
+      attackEvents: [],
+      meterStatuses: {},
+      disconnectedCount: 0,
+      meterEvents: {},
+      // Do not reset scenarioMetadata so the description stays visible!
+      activeStages: ATTACK_STAGES,
+      graphData: { nodes: [], edges: [] },
+      timelinePosition: 0,
+    }));
+  },
   // ─── Demo Mode ─────────────────────────────────────────
   triggerDemoMode: () => {
     const state = get();

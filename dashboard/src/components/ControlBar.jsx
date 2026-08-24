@@ -15,12 +15,24 @@ export default function ControlBar() {
   const {
     connected, isRunning, detectionEnabled,
     riskScore, setDetectionEnabled, setRunning, reset,
+    selectedScenario, setSelectedScenario,
   } = useSimulationStore();
   
   const { simulationState } = useActiveState();
 
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('app-theme') || 'current');
+
+  // Fetch scenario metadata whenever it changes
+  useEffect(() => {
+    if (!selectedScenario) return;
+    fetch(`${API_BASE}/api/scenario/${selectedScenario}`)
+      .then(res => res.json())
+      .then(data => {
+        useSimulationStore.setState({ scenarioMetadata: data });
+      })
+      .catch(e => console.error("Failed to fetch scenario metadata:", e));
+  }, [selectedScenario]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -34,7 +46,7 @@ export default function ControlBar() {
       const resp = await fetch(`${API_BASE}/api/simulation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ detection_enabled: detectionEnabled }),
+        body: JSON.stringify({ detection_enabled: detectionEnabled, scenario: `scenarios/${selectedScenario}.yaml` }),
       });
       if (resp.ok) setRunning(true);
     } catch (e) {
@@ -82,6 +94,7 @@ export default function ControlBar() {
               {simulationState === 'blocked' ? <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-bold">🛡️ Attack Blocked</span> : 
                simulationState === 'failed' ? <span className="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded font-bold">❌ Attack Failed</span> : 
                simulationState === 'succeeded' ? <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-bold animate-pulse">🚨 Attack Successful</span> : 
+               simulationState === 'normal_ops' ? <span className="bg-slate-500/20 text-slate-300 px-2 py-0.5 rounded font-bold">✅ Normal Activity — No Threat Detected</span> :
                simulationState === 'running' ? <span className="text-blue-400 font-bold">⚡ Running...</span> : 
                'Smart Grid Security • C3iHub'}
             </p>
@@ -100,6 +113,21 @@ export default function ControlBar() {
 
       {/* Center: Controls */}
       <div className="flex items-center gap-3">
+        <select
+          value={selectedScenario}
+          onChange={(e) => {
+            setSelectedScenario(e.target.value);
+            resetSimulation();
+          }}
+          disabled={loading || isRunning || !connected}
+          className="bg-[var(--color-bg-hover)] border border-[var(--color-border)] text-[var(--color-text-dim)] text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500"
+        >
+          <option value="credential_intrusion">Credential Intrusion (Default)</option>
+          <option value="insider_threat">Insider Threat</option>
+          <option value="slow_burn_apt">Slow-Burn APT</option>
+          <option value="false_positive">False Positive (Normal Ops)</option>
+        </select>
+
         <button
           onClick={startSimulation}
           disabled={loading || isRunning || !connected}

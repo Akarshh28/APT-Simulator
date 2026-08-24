@@ -5,11 +5,12 @@
  * Each stage shows its status (pending/active/complete/prevented) and technique ID.
  */
 
-import { ATTACK_STAGES } from '../store/simulationStore';
+import useSimulationStore from '../store/simulationStore';
 import useActiveState from '../hooks/useActiveState';
 
 export default function AttackerPanel() {
   const { stageStatuses, attackEvents, hasBlocked } = useActiveState();
+  const activeStages = useSimulationStore(s => s.activeStages);
 
   const getStageStatus = (stageId) => {
     let status = stageStatuses[stageId] || 'pending';
@@ -57,14 +58,14 @@ export default function AttackerPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
-        {ATTACK_STAGES.map((stage, idx) => {
+        {activeStages.map((stage, idx) => {
           const status = getStageStatus(stage.id);
           const latestEvent = stageEvents[stage.id];
 
           return (
             <div key={stage.id} className="relative">
               {/* Connector line */}
-              {idx < ATTACK_STAGES.length - 1 && (
+              {idx < activeStages.length - 1 && (
                 <div className={`absolute left-[17px] top-[36px] w-0.5 h-[calc(100%-8px)] transition-colors duration-500
                   ${status === 'complete' ? 'bg-[var(--color-safe)]' : 'bg-[var(--color-border-dim)]'}`} />
               )}
@@ -91,6 +92,11 @@ export default function AttackerPanel() {
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium">{stage.tactic}</span>
                     </div>
+                    {stage.description && (
+                      <div className="mt-1 text-[9px] text-slate-400 leading-tight">
+                        {stage.description}
+                      </div>
+                    )}
                   </div>
 
                   {/* Status label */}

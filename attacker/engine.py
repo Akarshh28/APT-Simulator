@@ -25,11 +25,13 @@ from shared.models import AttackStage, WSMessage
 from .event_log import EventLog
 from .stages import (
     recon,
+    physical_tamper,
     initial_access,
     persistence,
     lateral_movement,
     command_control,
     impact,
+    benign_activity,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,11 +50,13 @@ class AttackEngine:
 
     STAGE_MODULES = {
         AttackStage.RECONNAISSANCE: recon,
+        AttackStage.PHYSICAL_TAMPER: physical_tamper,
         AttackStage.INITIAL_ACCESS: initial_access,
         AttackStage.PERSISTENCE: persistence,
         AttackStage.LATERAL_MOVEMENT: lateral_movement,
         AttackStage.COMMAND_CONTROL: command_control,
         AttackStage.IMPACT: impact,
+        AttackStage.BENIGN_ACTIVITY: benign_activity,
     }
 
     def __init__(self, scenario_path: str = None):
@@ -104,7 +108,39 @@ class AttackEngine:
             self.scenario = yaml.safe_load(f)
 
         logger.info(f"Loaded scenario: {self.scenario.get('name', 'unnamed')}")
+        self.validate_scenarios()
         return self.scenario
+
+    @classmethod
+    def validate_scenarios(cls):
+        """Dev-only safety check to ensure scenarios are genuinely distinct."""
+        import glob
+        scenario_dir = config.PROJECT_ROOT / "scenarios"
+        seen_signatures = {}
+        for yaml_file in glob.glob(str(scenario_dir / "*.yaml")):
+            try:
+                with open(yaml_file, "r") as f:
+                    scen = yaml.safe_load(f)
+                    name = scen.get("name", Path(yaml_file).stem)
+                    graph_config = scen.get("graph_config", {})
+                    origin = graph_config.get("origin", "external")
+                    compromised = graph_config.get("compromised_identity", "operator1")
+                    stages = tuple(s.get("name") for s in scen.get("stages", []))
+                    
+                    sig = (origin, compromised, stages)
+                    if sig in seen_signatures:
+                        logger.warning(
+                            f"\n[SAFETY WARNING] Scenarios '{name}' and '{seen_signatures[sig]}' "
+                            f"share the exact same structural signature:\n"
+                            f"  Origin: {origin}\n"
+                            f"  Identity: {compromised}\n"
+                            f"  Stages: {stages}\n"
+                            f"Please differentiate them to ensure the demo is credible!"
+                        )
+                    else:
+                        seen_signatures[sig] = name
+            except Exception as e:
+                logger.error(f"Failed to parse scenario {yaml_file} for validation: {e}")
 
     def set_ws_broadcast(self, callback):
         """Register a callback for WebSocket broadcasting."""
@@ -149,18 +185,18 @@ class AttackEngine:
         logger.info(f"  ATTACK SIMULATION: {self.scenario.get('name', 'APT Attack')}")
         logger.info("=" * 60)
 
-        stages_config = {s["name"]: s for s in self.scenario.get("stages", [])}
+        stages_to_run = []
+        for s in self.scenario.get("stages", []):
+            try:
+                stage_enum = AttackStage(s["name"])
+                stages_to_run.append((stage_enum, s))
+            except ValueError:
+                logger.warning(f"Unknown stage name {s['name']} in scenario config")
 
-        stages_to_run = [
-            (AttackStage.RECONNAISSANCE, stages_config.get("reconnaissance", {})),
-            (AttackStage.INITIAL_ACCESS, stages_config.get("initial_access", {})),
-            (AttackStage.PERSISTENCE, stages_config.get("persistence", {})),
-            (AttackStage.LATERAL_MOVEMENT, stages_config.get("lateral_movement", {})),
-            (AttackStage.COMMAND_CONTROL, stages_config.get("command_control", {})),
-            (AttackStage.IMPACT, stages_config.get("impact", {})),
-        ]
-
-        terminal_state = "succeeded"
+        if self.scenario.get("name") == "false_positive" or not any(s[0] != AttackStage.BENIGN_ACTIVITY for s in stages_to_run):
+            terminal_state = "normal_ops"
+        else:
+            terminal_state = "succeeded"
 
         for i, (stage, stage_cfg) in enumerate(stages_to_run):
             extra = {}

@@ -66,6 +66,9 @@ class MeterAgent:
         # Meter state
         self.status = MeterStatus.CONNECTED
         self.cumulative_kwh = random.uniform(500, 15000)  # Start with some history
+        self._max_demand = 0.0
+        self._battery_voltage = random.uniform(3.6, 3.8)
+        self._power_fail_count = random.randint(0, 5)
         self._running = False
         self._task: asyncio.Task | None = None
 
@@ -92,6 +95,8 @@ class MeterAgent:
 
     def disconnect(self):
         """Simulate meter disconnect (e.g., by attacker or legitimate command)."""
+        if self.status != MeterStatus.DISCONNECTED:
+            self._power_fail_count += 1
         self.status = MeterStatus.DISCONNECTED
         logger.info(f"Meter {self.meter_id} DISCONNECTED")
 
@@ -143,6 +148,18 @@ class MeterAgent:
         interval_hours = 0.25  # Simulated 15 minutes
         self.cumulative_kwh += load_kw * interval_hours
 
+        # Track max demand
+        if load_kw > self._max_demand:
+            self._max_demand = load_kw
+            
+        # Add slight variance to battery voltage
+        self._battery_voltage += random.uniform(-0.001, 0.001)
+        self._battery_voltage = min(max(self._battery_voltage, 3.5), 3.9)
+
+        # Map status
+        wan_status = "Connected" if self.status == MeterStatus.CONNECTED else "Disconnected"
+        han_status = "Connected" if self.status == MeterStatus.CONNECTED else "Disconnected"
+
         return MeterTelemetry(
             meter_id=self.meter_id,
             timestamp=datetime.now(timezone.utc),
@@ -151,6 +168,12 @@ class MeterAgent:
             power_factor=round(power_factor, 3),
             consumption_kwh=round(self.cumulative_kwh, 2),
             active_power_w=round(active_power_w, 1),
+            max_demand_kw=round(self._max_demand, 2),
+            battery_voltage=round(self._battery_voltage, 3),
+            diag_status="Good" if self.status != MeterStatus.ERROR else "Fault",
+            wan_status=wan_status,
+            han_status=han_status,
+            power_fail_count=self._power_fail_count,
             zone=self.zone,
             latitude=self.latitude,
             longitude=self.longitude,

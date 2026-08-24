@@ -1,0 +1,26 @@
+name: "false_positive"
+title: "False Positive (Normal Ops)"
+description: "Routine maintenance and telemetry gathering by an authorized admin."
+narrative: "There is no attack happening here. A normal grid operator is just doing their daily routine maintenance on the electricity meters. This scenario proves that our security system won't accidentally block normal company work."
+duration_minutes: 2
+time_compression: 60
+
+graph_config:
+  origin: "A"
+  compromised_identity: "field_tech_01"
+
+detection_weights:
+  login_anomaly: 0.2
+  graph_anomaly: 0.1
+  beacon_detection: 0.0
+  isolation_forest: 0.1
+  mass_command: 0.0
+  physical_tamper: 0.0
+
+stages:
+  - name: benign_activity
+    technique_id: N/A
+    tactic: Operations
+    description: "Admin logs in and performs standard telemetry queries"
+    delay_after: 2
+    config: {}

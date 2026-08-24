@@ -36,11 +36,13 @@ class CommandType(str, Enum):
 class AttackStage(str, Enum):
     """MITRE ATT&CK for ICS kill-chain stages used in our simulation."""
     RECONNAISSANCE = "reconnaissance"
+    PHYSICAL_TAMPER = "physical_tampering"
     INITIAL_ACCESS = "initial_access"
     PERSISTENCE = "persistence"
     LATERAL_MOVEMENT = "lateral_movement"
     COMMAND_CONTROL = "command_control"
     IMPACT = "impact"
+    BENIGN_ACTIVITY = "benign_activity"
 
 
 class AlertSeverity(str, Enum):
@@ -61,8 +63,14 @@ class MeterTelemetry(BaseModel):
     # Industrial meters can exceed 100A during peak load (e.g., 50kW / 415V), so we use le=500 for safety.
     current: float = Field(..., ge=0, le=500, description="Current in amps")
     power_factor: float = Field(..., ge=0, le=1, description="Power factor")
-    consumption_kwh: float = Field(..., ge=0, description="Cumulative kWh")
+    consumption_kwh: float = Field(..., ge=0, description="Cumulative kWh (FWD)")
     active_power_w: float = Field(0, ge=0, description="Instantaneous active power in watts")
+    max_demand_kw: float = Field(0, ge=0, description="Maximum demand (MD) in kW")
+    battery_voltage: float = Field(3.6, description="Battery voltage in V")
+    diag_status: str = Field("Good", description="Diagnostics status")
+    wan_status: str = Field("Connected", description="WAN connectivity status")
+    han_status: str = Field("Connected", description="HAN connectivity status")
+    power_fail_count: int = Field(0, ge=0, description="Power failure history counter")
     zone: str = Field(..., description="Zone A-F")
     latitude: float = Field(..., description="Meter latitude")
     longitude: float = Field(..., description="Meter longitude")
@@ -76,6 +84,12 @@ class MeterTelemetry(BaseModel):
         "power_factor": 0.95,
         "consumption_kwh": 1542.7,
         "active_power_w": 920.0,
+        "max_demand_kw": 1.2,
+        "battery_voltage": 3.732,
+        "diag_status": "Good",
+        "wan_status": "Connected",
+        "han_status": "Connected",
+        "power_fail_count": 0,
         "zone": "A",
         "latitude": 26.45,
         "longitude": 80.35,

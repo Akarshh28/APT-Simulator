@@ -60,6 +60,16 @@ ws_connections: list[WebSocket] = []
 # Monitoring task
 _monitor_task: asyncio.Task | None = None
 
+def _update_signal_with_weight(signal: str, base_value: float, evidence: dict = None):
+    """Apply scenario-specific weights to signals."""
+    weight = 1.0
+    if attack_engine.scenario:
+        weight = attack_engine.scenario.get("detection_weights", {}).get(signal, 1.0)
+    
+    adjusted_value = min(100.0, base_value * weight)
+    risk_scorer.update_signal(signal, adjusted_value, evidence=evidence)
+
+
 
 # ─── Lifespan ──────────────────────────────────────────────────
 
@@ -84,14 +94,16 @@ async def lifespan(app: FastAPI):
 
     def _handle_stage_active(stage_name: str):
         """Force signal updates when stages run, ensuring multi-signal correlation for demo."""
-        if stage_name in ("initial_access", "persistence"):
-            risk_scorer.update_signal("login_anomaly", 70, evidence={"reasons": ["Credential stuffing", "Rogue account created"]})
+        if stage_name == "physical_tampering":
+            _update_signal_with_weight("physical_tamper", 85, evidence={"reasons": ["Token REJECTED / REFUND generated"]})
+        elif stage_name in ("initial_access", "persistence"):
+            _update_signal_with_weight("login_anomaly", 70, evidence={"reasons": ["Credential stuffing", "Rogue account created"]})
         elif stage_name == "lateral_movement":
-            risk_scorer.update_signal("graph_anomaly", 85, evidence={"severity": "high", "reasons": ["New edge to MDMS"]})
+            _update_signal_with_weight("graph_anomaly", 85, evidence={"severity": "high", "reasons": ["New edge to MDMS"]})
         elif stage_name == "command_control":
-            risk_scorer.update_signal("beacon_detection", 90, evidence={"reasons": ["Periodic heartbeat detected"]})
+            _update_signal_with_weight("beacon_detection", 90, evidence={"reasons": ["Periodic heartbeat detected"]})
         elif stage_name == "impact":
-            risk_scorer.update_signal("mass_command", 95, evidence={"recent_disconnects": 100})
+            _update_signal_with_weight("mass_command", 95, evidence={"recent_disconnects": 100})
             
     attack_engine.set_stage_cb(_handle_stage_active)
 
@@ -153,7 +165,7 @@ async def _monitoring_loop():
             # Check anomaly scorer window
             window_result = anomaly_scorer.check_window()
             if window_result and window_result["is_anomalous"]:
-                risk_scorer.update_signal(
+                _update_signal_with_weight(
                     "isolation_forest",
                     window_result["anomaly_score"] * 100,
                     evidence=window_result,
@@ -222,7 +234,7 @@ def _process_login_events(login_log: list[dict]):
 
             # Scale signal by failure count
             signal_value = min(100, recent_failures * 10)
-            risk_scorer.update_signal(
+            _update_signal_with_weight(
                 "login_anomaly",
                 signal_value,
                 evidence={"reasons": reasons, "recent_failures": recent_failures},
@@ -235,7 +247,7 @@ def _process_login_events(login_log: list[dict]):
                 username, "HES", "login"
             )
             if anomaly:
-                risk_scorer.update_signal(
+                _update_signal_with_weight(
                     "graph_anomaly",
                     70 if anomaly["severity"] == "high" else 40,
                     evidence=anomaly,
@@ -260,7 +272,7 @@ def _process_command_events(command_log: list[dict]):
                 if e.get("command_type") == "disconnect"
             )
             if recent_disconnects > 20:
-                risk_scorer.update_signal(
+                _update_signal_with_weight(
                     "mass_command",
                     min(100, recent_disconnects * 2),
                     evidence={"recent_disconnects": recent_disconnects},
@@ -449,15 +461,19 @@ async def _run_attack_with_detection():
         # Feed into detection modules
         stage = event.stage
 
-        if stage == AttackStage.INITIAL_ACCESS:
+        if stage == AttackStage.PHYSICAL_TAMPER:
+            if "reject" in event.action.lower() or "refund" in event.action.lower():
+                _update_signal_with_weight("physical_tamper", 85, evidence={"meter": event.details.get("meter_id")})
+
+        elif stage == AttackStage.INITIAL_ACCESS:
             if not event.success:
                 anomaly_scorer.ingest_login_event({"success": False, "username": event.source})
-                risk_scorer.update_signal("login_anomaly", 15)
+                _update_signal_with_weight("login_anomaly", 15)
 
         elif stage == AttackStage.PERSISTENCE:
             anomaly_scorer.ingest_account_creation()
             graph_detector.record_interaction(event.source, "MDMS", "account_creation")
-            risk_scorer.update_signal("isolation_forest", 25)
+            _update_signal_with_weight("isolation_forest", 25)
 
         elif stage == AttackStage.LATERAL_MOVEMENT:
             anomaly_scorer.ingest_cross_service_auth()
@@ -467,7 +483,7 @@ async def _run_attack_with_detection():
                 metadata={"from": "HES"},
             )
             if anomaly:
-                risk_scorer.update_signal("graph_anomaly", 60, evidence=anomaly)
+                _update_signal_with_weight("graph_anomaly", 60, evidence=anomaly)
 
         elif stage == AttackStage.COMMAND_CONTROL:
             # Beacon telemetry
@@ -475,7 +491,7 @@ async def _run_attack_with_detection():
                 event.details.get("meter_id", "SM-X-9999")
             )
             if result and result["is_beacon"]:
-                risk_scorer.update_signal(
+                _update_signal_with_weight(
                     "beacon_detection",
                     result["confidence"] * 80,
                     evidence=result,
@@ -484,7 +500,7 @@ async def _run_attack_with_detection():
         elif stage == AttackStage.IMPACT:
             if "disconnect" in event.action.lower():
                 anomaly_scorer.ingest_command({"command_type": "disconnect"})
-                risk_scorer.update_signal("mass_command", 80)
+                _update_signal_with_weight("mass_command", 80)
 
     attack_engine.event_log.set_ws_callback(event_handler)
 
@@ -542,8 +558,36 @@ async def simulation_status():
         "stage_results": attack_engine.stage_results,
         "detection_enabled": risk_scorer.detection_enabled,
         "risk_score": round(risk_scorer.current_risk, 2),
+        "scenario_metadata": {
+            "name": attack_engine.scenario.get("name"),
+            "title": attack_engine.scenario.get("title"),
+            "narrative": attack_engine.scenario.get("narrative"),
+            "description": attack_engine.scenario.get("description"),
+            "stages": [{"name": s.get("name"), "description": s.get("description", "")} for s in attack_engine.scenario.get("stages", [])],
+            "graph_config": attack_engine.scenario.get("graph_config", {}),
+        } if attack_engine.scenario else None,
     }
 
+
+@app.get("/api/scenario/{scenario_name}")
+async def get_scenario(scenario_name: str):
+    """Load and return scenario metadata without starting it."""
+    scenario_path = str(config.PROJECT_ROOT / "scenarios" / f"{scenario_name}.yaml")
+    try:
+        from attacker.engine import AttackEngine
+        temp_engine = AttackEngine(scenario_path)
+        temp_engine.load_scenario()
+        return {
+            "name": temp_engine.scenario.get("name"),
+            "title": temp_engine.scenario.get("title"),
+            "narrative": temp_engine.scenario.get("narrative"),
+            "description": temp_engine.scenario.get("description"),
+            "stages": [{"name": s.get("name"), "description": s.get("description", "")} for s in temp_engine.scenario.get("stages", [])],
+            "graph_config": temp_engine.scenario.get("graph_config", {}),
+        }
+    except Exception as e:
+        logger.error(f"Failed to load scenario {scenario_name}: {e}")
+        return {}
 
 @app.get("/api/attack-events")
 async def get_attack_events():
@@ -573,6 +617,14 @@ async def websocket_alerts(ws: WebSocket):
                 "detection_enabled": risk_scorer.detection_enabled,
                 "risk_score": risk_scorer.current_risk,
                 "alerts": risk_scorer.get_alerts(),
+                "scenario_metadata": {
+                    "name": attack_engine.scenario.get("name"),
+                    "title": attack_engine.scenario.get("title"),
+                    "narrative": attack_engine.scenario.get("narrative"),
+                    "description": attack_engine.scenario.get("description"),
+                    "stages": [{"name": s.get("name"), "description": s.get("description", "")} for s in attack_engine.scenario.get("stages", [])],
+                    "graph_config": attack_engine.scenario.get("graph_config", {}),
+                } if attack_engine.scenario else None,
             },
         ).model_dump(mode="json"))
 

@@ -80,8 +80,9 @@ async def lifespan(app: FastAPI):
     )
     command_engine.fleet_manager = fleet_manager
 
-    # Subscribe to meter telemetry via event bus
+    # Subscribe to meter telemetry and events via event bus
     event_bus.subscribe("meters/+/telemetry", _handle_telemetry)
+    event_bus.subscribe("meters/+/events", _handle_meter_event)
 
     # Start the meter fleet
     await fleet_manager.start()
@@ -134,6 +135,23 @@ async def _handle_telemetry(topic: str, payload: dict):
             ))
     except Exception as e:
         logger.error(f"Telemetry processing error: {e}")
+
+async def _handle_meter_event(topic: str, payload: dict):
+    """Process other meter events (e.g. token rejected) from event bus."""
+    try:
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+            
+        # Ensure timestamp exists
+        if "timestamp" not in payload:
+            payload["timestamp"] = datetime.now(timezone.utc).isoformat()
+            
+        await _broadcast_ws(WSMessage(
+            type="meter_event",
+            payload=payload
+        ))
+    except Exception as e:
+        logger.error(f"Event processing error: {e}")
 
 
 # Buffer of readings to forward to MDMS in batches

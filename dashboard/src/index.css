@@ -241,9 +241,9 @@ body {
 }
 
 .graph-edge-normal {
-  stroke: var(--color-border);
+  stroke: #94a3b8; /* Tailwind slate-400 */
   stroke-width: 1.5;
-  opacity: 0.4;
+  opacity: 0.8;
 }
 
 .graph-edge-anomalous {

@@ -1,0 +1,73 @@
+name: "slow_burn_apt"
+title: "Slow-Burn APT"
+description: "A highly evasive, multi-day attack characterized by low-intensity signals designed to blend in with normal traffic."
+narrative: "A very patient and advanced hacker compromises a field technician's laptop. Instead of acting quickly, they perform tiny, quiet actions over many weeks to avoid triggering alarms, eventually slowly disconnecting meters without anyone noticing."
+duration_minutes: 8
+time_compression: 14400 # Represents many days
+
+graph_config:
+  origin: "F"
+  compromised_identity: "field_tech"
+  c2_node: "c2_host"
+
+detection_weights:
+  login_anomaly: 0.3
+  graph_anomaly: 0.4
+  beacon_detection: 0.5
+  isolation_forest: 0.5
+  mass_command: 0.5
+  physical_tamper: 0.5
+
+stages:
+  - name: reconnaissance
+    technique_id: T0846
+    tactic: Discovery
+    description: "Attacker slowly maps HES endpoints over several days"
+    start_offset_seconds: 0
+    delay_after: 15
+    
+  - name: initial_access
+    technique_id: T0859
+    tactic: Initial Access
+    description: "Low-and-slow credential stuffing to evade lockout thresholds"
+    delay_after: 20
+    config:
+      wordlist: ["password", "admin", "grid2024", "admin123"]
+      target_users: ["operator1", "admin"]
+      
+  - name: persistence
+    technique_id: T1098
+    tactic: Persistence
+    description: "Rogue account created during off-hours"
+    delay_after: 25
+    config:
+      rogue_account:
+        username: "svc_backup"
+        password: "Sup3rS3cur3!"
+        role: "admin"
+        
+  - name: lateral_movement
+    technique_id: T0886
+    tactic: Lateral Movement
+    description: "Periodic, stealthy lateral movement queries"
+    delay_after: 30
+    config: {}
+    
+  - name: command_control
+    technique_id: T0869
+    tactic: C2
+    description: "Intermittent beaconing with high jitter to avoid pattern detection"
+    duration_seconds: 60
+    delay_after: 15
+    config:
+      beacon_interval_seconds: 120
+      fake_meter_id: "SM-X-9999"
+      
+  - name: impact
+    technique_id: T0826
+    tactic: Impact
+    description: "Gradual mass disconnect using small batches to avoid sudden spikes"
+    delay_after: 0
+    config:
+      zone_order: ["E", "F"]
+      disconnect_batch_size: 10
