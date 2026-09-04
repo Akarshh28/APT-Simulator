@@ -14,6 +14,7 @@ export default function AttackerPanel() {
   const { stageStatuses, attackEvents, hasBlocked } = useActiveState();
   const selectedScenario = useSimulationStore(s => s.selectedScenario);
   const simulationState = useSimulationStore(s => s.simulationState);
+  const scenarioMetadata = useSimulationStore(s => s.scenarioMetadata);
   const scenario = scenarios[selectedScenario];
   const storeActiveStages = useSimulationStore(s => s.activeStages);
   const activeStages = storeActiveStages || scenario?.stages?.map(id => ATTACK_STAGES.find(st => st.id === id)).filter(Boolean); // Handle both
@@ -87,8 +88,6 @@ export default function AttackerPanel() {
   attackEvents.forEach((ev) => {
     stageEvents[ev.stage] = ev;
   });
-  
-  const scenarioMetadata = useSimulationStore(s => s.scenarioMetadata);
 
   return (
     <div className="glass-panel p-4 h-full flex flex-col">
