@@ -271,8 +271,8 @@ export default function SecurityArchitectureDiagram() {
     <div className="glass-panel p-3 h-full flex flex-col relative" ref={containerRef}>
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm">🌐</span>
-          <h2 className="text-xs font-bold text-[var(--color-text)] uppercase tracking-wider">
+          <span className="text-lg">🌐</span>
+          <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-wider">
             SOC Threat Topology
           </h2>
         </div>
@@ -294,16 +294,16 @@ export default function SecurityArchitectureDiagram() {
           
           <g className="tiers">
             <rect x="0" y="20" width="800" height="100" fill="var(--color-danger)" opacity="0.1" rx="8" />
-            <text x="20" y="50" fill="var(--color-text-dim)" fontSize="14" fontWeight="bold">External / Untrusted</text>
+            <text x="20" y="55" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">External / Untrusted</text>
             
             <rect x="0" y="150" width="800" height="130" fill="#22d3ee" opacity="0.1" rx="8" />
-            <text x="20" y="170" fill="var(--color-text-dim)" fontSize="14" fontWeight="bold">Identity / Access Layer</text>
+            <text x="20" y="175" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Identity / Access Layer</text>
             
             <rect x="0" y="310" width="800" height="130" fill="var(--color-accent)" opacity="0.1" rx="8" />
-            <text x="20" y="330" fill="var(--color-text-dim)" fontSize="14" fontWeight="bold">OT Systems</text>
+            <text x="20" y="335" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">OT Systems</text>
             
             <rect x="0" y="470" width="800" height="130" fill="var(--color-warning)" opacity="0.1" rx="8" />
-            <text x="20" y="490" fill="var(--color-text-dim)" fontSize="14" fontWeight="bold">Field Devices</text>
+            <text x="20" y="495" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Field Devices</text>
           </g>
 
           {/* Edges render FIRST — so nodes sit on top visually */}
@@ -345,12 +345,12 @@ export default function SecurityArchitectureDiagram() {
                   className={`cursor-pointer transition-transform duration-300 hover:scale-110 ${isNew ? 'animate-node-appear' : ''}`}
                 >
                   {isComp && (
-                    <circle r="24" fill="none" stroke="#ef4444" strokeWidth="2" className="animate-pulse-ring" />
+                    <circle r="28" fill="none" stroke="#ef4444" strokeWidth="2" className="animate-pulse-ring" />
                   )}
-                  <circle r="18" fill="var(--color-bg-panel)" stroke={NODE_COLORS[meta.type] || '#888'} strokeWidth="1.5" />
-                  <text textAnchor="middle" dominantBaseline="central" fontSize="16">{meta.icon}</text>
-                  <rect x="-35" y="24" width="70" height="18" rx="4" fill="var(--color-bg-card)" opacity="0.9" />
-                  <text y="36" textAnchor="middle" fill="var(--color-text)" fontSize="10" fontWeight="bold">{meta.label}</text>
+                  <circle r="22" fill="var(--color-bg-panel)" stroke={NODE_COLORS[meta.type] || '#888'} strokeWidth="1.5" />
+                  <text textAnchor="middle" dominantBaseline="central" fontSize="24">{meta.icon}</text>
+                  <rect x="-55" y="28" width="110" height="26" rx="4" fill="var(--color-bg-card)" opacity="0.9" />
+                  <text y="46" textAnchor="middle" fill="var(--color-text)" fontSize="16" fontWeight="bold">{meta.label}</text>
                 </g>
               );
             })}
