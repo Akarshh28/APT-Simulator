@@ -16,7 +16,8 @@ import AttackerPanel from './components/AttackerPanel';
 import DefenderPanel from './components/DefenderPanel';
 import CityGridMap from './components/CityGridMap';
 import RiskScoreChart from './components/RiskScoreChart';
-import NetworkGraph from './components/NetworkGraph';
+import SecurityArchitectureDiagram from './components/SecurityArchitectureDiagram';
+import ScenarioBanner from './components/ScenarioBanner';
 
 export default function App() {
   // Initialize WebSocket connections
@@ -36,6 +37,7 @@ export default function App() {
 
         {/* Center Column: Map + Timeline */}
         <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <ScenarioBanner />
           {/* City Grid Map — visual centerpiece */}
           <div className="flex-1 min-h-0">
             <CityGridMap />
@@ -47,13 +49,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Column: Defender Panel + Network Graph */}
+        {/* Right Column: Defender Panel + Security Diagram */}
         <div className="w-[280px] shrink-0 flex flex-col gap-2">
           <div className="flex-1 min-h-0">
             <DefenderPanel />
           </div>
           <div className="h-[260px] shrink-0">
-            <NetworkGraph />
+            <SecurityArchitectureDiagram />
           </div>
         </div>
       </div>

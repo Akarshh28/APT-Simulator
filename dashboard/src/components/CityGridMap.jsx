@@ -427,10 +427,11 @@ export default function CityGridMap() {
           
           return (
             <div 
-              className="absolute z-10 pointer-events-none transform -translate-x-1/2 -translate-y-full pb-2 transition-all duration-100"
+              className="absolute z-10 pointer-events-none transition-all duration-100"
               style={{ 
                 left: `${(hoveredMeter.x / mapWidth) * 100}%`, 
-                top: `${(hoveredMeter.y / mapHeight) * 100}%` 
+                top: `${(hoveredMeter.y / mapHeight) * 100}%`,
+                transform: hoveredMeter.y < 150 ? 'translate(-50%, 10px)' : 'translate(-50%, calc(-100% - 10px))'
               }}
             >
               <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl rounded px-3 py-2 text-xs backdrop-blur-md whitespace-nowrap min-w-[180px]">

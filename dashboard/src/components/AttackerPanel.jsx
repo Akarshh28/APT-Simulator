@@ -5,12 +5,18 @@
  * Each stage shows its status (pending/active/complete/prevented) and technique ID.
  */
 
-import useSimulationStore from '../store/simulationStore';
+import { ATTACK_STAGES } from '../store/simulationStore';
 import useActiveState from '../hooks/useActiveState';
+import useSimulationStore from '../store/simulationStore';
+import { scenarios } from '../config/scenarios';
 
 export default function AttackerPanel() {
   const { stageStatuses, attackEvents, hasBlocked } = useActiveState();
-  const activeStages = useSimulationStore(s => s.activeStages);
+  const selectedScenario = useSimulationStore(s => s.selectedScenario);
+  const simulationState = useSimulationStore(s => s.simulationState);
+  const scenario = scenarios[selectedScenario];
+  const storeActiveStages = useSimulationStore(s => s.activeStages);
+  const activeStages = storeActiveStages || scenario?.stages?.map(id => ATTACK_STAGES.find(st => st.id === id)).filter(Boolean); // Handle both
 
   const getStageStatus = (stageId) => {
     let status = stageStatuses[stageId] || 'pending';
@@ -21,14 +27,15 @@ export default function AttackerPanel() {
   };
 
   const getStageClass = (status) => {
-    if (status === 'prevented') return 'border-teal-500/50 bg-teal-500/10 shadow-[0_0_15px_rgba(20,184,166,0.2)]';
-    if (status === 'active') return 'border-blue-500/50 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.2)]';
-    if (status === 'retrying') return 'border-orange-500/50 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.2)]';
-    if (status === 'complete') return 'border-[var(--color-border)] bg-[var(--color-bg-hover)]';
-    if (status === 'blocked') return 'border-red-500/80 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]';
-    if (status === 'error') return 'border-red-500/50 bg-red-500/10';
-    if (status === 'halted') return 'border-orange-500/30 bg-orange-500/5 opacity-80';
-    return 'border-transparent bg-transparent opacity-60';
+    const base = 'backdrop-blur-md transition-all duration-500';
+    if (status === 'prevented') return `${base} border-teal-500/50 bg-teal-500/10 shadow-[0_4px_20px_rgba(20,184,166,0.15)]`;
+    if (status === 'active') return `${base} border-[var(--color-accent)] bg-[var(--color-accent)]/10 shadow-[0_4px_20px_rgba(59,130,246,0.15)]`;
+    if (status === 'retrying') return `${base} border-orange-500/50 bg-orange-500/10 shadow-[0_4px_20px_rgba(249,115,22,0.15)]`;
+    if (status === 'complete') return `${base} border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-[0_4px_15px_rgba(0,0,0,0.05)]`;
+    if (status === 'blocked') return `${base} border-red-500/80 bg-red-500/20 shadow-[0_4px_20px_rgba(239,68,68,0.2)]`;
+    if (status === 'error') return `${base} border-red-500/50 bg-red-500/10`;
+    if (status === 'halted') return `${base} border-orange-500/30 bg-orange-500/5 opacity-80`;
+    return `${base} border-transparent bg-transparent opacity-50 hover:bg-[var(--color-bg-hover)]`;
   };
 
   const getStatusDot = (status) => {
@@ -42,7 +49,42 @@ export default function AttackerPanel() {
     return 'bg-[var(--color-text-muted)]';
   };
 
-  // Get the latest event for each stage
+  // Special UI: False Positive (Activity Log)
+  if (selectedScenario === 'false_positive') {
+    return (
+      <div className="glass-panel p-4 h-full flex flex-col">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-lg">📋</span>
+          <h2 className="text-sm font-bold text-blue-400 uppercase tracking-wider">
+            Activity Log
+          </h2>
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {attackEvents.map((ev, i) => (
+            <div key={i} className="border border-blue-500/20 bg-blue-500/5 rounded-lg p-3">
+              <div className="text-[var(--color-text-muted)] mb-1 font-mono text-[9px]">
+                {new Date(ev.timestamp).toLocaleTimeString()}
+              </div>
+              <div className="text-[var(--color-text-dim)] text-[10px] leading-tight">
+                {ev.action}
+              </div>
+            </div>
+          ))}
+          {simulationState === 'normal_ops' && (
+            <div className="mt-4 p-3 border border-[var(--color-border)] bg-[var(--color-bg-card)] rounded-lg text-center shadow-[0_0_15px_rgba(100,116,139,0.2)]">
+               <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">
+                 Normal Activity — No Threat Detected
+               </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal Kill-Chain UI
+  const activeStages = scenario.stages.map(id => ATTACK_STAGES.find(s => s.id === id)).filter(Boolean);
+  
   const stageEvents = {};
   attackEvents.forEach((ev) => {
     stageEvents[ev.stage] = ev;
@@ -58,9 +100,28 @@ export default function AttackerPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
+        {selectedScenario === 'insider_threat' && (
+           <div className="relative mb-2">
+             <div className="border border-[var(--color-border)] bg-[var(--color-bg-card)] opacity-60 rounded-lg p-3 flex items-center gap-3">
+                <div className="w-[10px] h-[10px] rounded-full shrink-0 bg-[var(--color-border-dim)]" />
+                <div className="flex-1">
+                   <div className="text-xs font-semibold text-[var(--color-text-muted)] flex items-center gap-2">
+                     <span className="text-xs">ℹ️</span>
+                     N/A — Attacker Already Has Access
+                   </div>
+                   <div className="text-[9px] text-[var(--color-text-muted)] mt-0.5">
+                     Reconnaissance & Initial Access skipped.
+                   </div>
+                </div>
+             </div>
+             {/* connector to first actual stage */}
+             <div className="absolute left-[17px] top-[48px] w-0.5 h-[16px] bg-[var(--color-border-dim)]" />
+           </div>
+        )}
         {activeStages.map((stage, idx) => {
           const status = getStageStatus(stage.id);
           const latestEvent = stageEvents[stage.id];
+          const isLast = idx === activeStages.length - 1;
 
           return (
             <div key={stage.id} className="relative">
@@ -82,15 +143,15 @@ export default function AttackerPanel() {
                       <div className="w-4 flex justify-center shrink-0">
                         <span className="text-xs">{stage.icon}</span>
                       </div>
-                      <span className={`text-xs font-semibold ${status === 'active' || status === 'complete' ? 'text-white' : 'text-slate-300'}`}>
+                      <span className={`text-xs font-semibold ${status === 'active' || status === 'complete' ? 'text-[var(--color-text)]' : 'text-[var(--color-text-dim)]'}`}>
                         {stage.name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-mono text-slate-400 bg-[var(--color-bg-primary)] px-1.5 py-0.5 rounded border border-[var(--color-border)]">
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[9px] font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-1.5 py-0.5 rounded border border-[var(--color-accent)]/20 shadow-sm">
                         {stage.technique}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium">{stage.tactic}</span>
+                      <span className="text-[10px] text-[var(--color-text-muted)] font-medium tracking-wide">{stage.tactic}</span>
                     </div>
                     {stage.description && (
                       <div className="mt-1 text-[9px] text-slate-400 leading-tight">
@@ -108,23 +169,23 @@ export default function AttackerPanel() {
                     status === 'blocked' ? 'text-red-500 font-extrabold' :
                     status === 'error' ? 'text-[var(--color-danger)]' :
                     status === 'halted' ? 'text-orange-500' :
-                    'text-slate-500'
+                    'text-[var(--color-text-muted)]'
                   }`}>
                     {status === 'blocked' ? 'BLOCKED BY DETECTION' : status}
                   </span>
                 </div>
 
-                {/* Latest event detail Placeholder / Content */}
-                <div className="mt-2 text-[10px] pl-[22px] min-h-[28px]">
+                {/* Latest event detail Content */}
+                <div className="mt-3 pl-[22px] min-h-[28px]">
                   {latestEvent && status !== 'pending' && (
-                    <>
-                      <div className="text-[var(--color-text-muted)] mb-0.5 font-mono text-[9px]">
+                    <div className="bg-[var(--color-bg-primary)]/50 p-2.5 rounded-lg border border-[var(--color-border-dim)] backdrop-blur-sm">
+                      <div className="text-[var(--color-text-muted)] mb-1 font-mono text-[8px] tracking-wider uppercase">
                         {new Date(latestEvent.timestamp).toLocaleTimeString()}
                       </div>
-                      <div className="killchain-card-desc whitespace-normal break-words leading-tight text-slate-300" title={latestEvent.action}>
+                      <div className="killchain-card-desc whitespace-normal break-words leading-relaxed text-[var(--color-text)] font-medium" title={latestEvent.action}>
                         {latestEvent.action}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>

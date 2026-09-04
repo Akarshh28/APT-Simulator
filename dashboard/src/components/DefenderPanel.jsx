@@ -5,6 +5,7 @@
  */
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import useActiveState from '../hooks/useActiveState';
 
 const SIGNAL_DESCRIPTIONS = {
@@ -18,11 +19,13 @@ const SIGNAL_DESCRIPTIONS = {
 const getSeverityStyles = (severity) => {
   switch (severity?.toLowerCase()) {
     case 'critical':
-      return { border: 'border-red-500/50', bg: 'bg-red-500/10', text: 'text-red-400' };
+      return { border: 'border-red-500/40', bg: 'bg-red-500/10', text: 'text-red-400', techBg: 'bg-red-500/20', techText: 'text-red-300' };
     case 'high':
-      return { border: 'border-orange-500/50', bg: 'bg-orange-500/10', text: 'text-orange-400' };
+      return { border: 'border-orange-500/40', bg: 'bg-orange-500/10', text: 'text-orange-400', techBg: 'bg-orange-500/20', techText: 'text-orange-300' };
+    case 'info':
+      return { border: 'border-blue-500/30', bg: 'bg-blue-500/10', text: 'text-blue-400', techBg: 'bg-blue-500/20', techText: 'text-blue-300' };
     default:
-      return { border: 'border-yellow-500/30', bg: 'bg-yellow-500/5', text: 'text-yellow-400' };
+      return { border: 'border-yellow-500/40', bg: 'bg-yellow-500/10', text: 'text-yellow-400', techBg: 'bg-yellow-500/20', techText: 'text-yellow-300' };
   }
 };
 
@@ -53,9 +56,9 @@ export default function DefenderPanel() {
 
   return (
     <div className={`glass-panel p-4 h-full flex flex-col relative transition-all duration-500 ${pulseClass}`}>
-      <div className="flex items-center gap-2 mb-4 shrink-0">
-        <span className="text-lg">🛡️</span>
-        <h2 className="text-sm font-bold text-[var(--color-accent)] uppercase tracking-wider">
+      <div className="flex items-center gap-2 mb-4 shrink-0 overflow-hidden">
+        <span className="text-lg shrink-0">🛡️</span>
+        <h2 className="text-[13px] font-bold text-[var(--color-accent)] uppercase tracking-wider whitespace-nowrap">
           SOC / Defender
         </h2>
         {!detectionEnabled && (
@@ -71,7 +74,7 @@ export default function DefenderPanel() {
           <svg width="130" height="130" viewBox="0 0 130 130">
             {/* Background ring */}
             <circle cx="65" cy="65" r={gaugeRadius} fill="none"
-              stroke="var(--color-bg-hover)" strokeWidth={gaugeStroke}
+              stroke="var(--color-border)" strokeWidth={gaugeStroke} opacity="0.8"
               strokeLinecap="round" transform="rotate(-90 65 65)" />
             {/* Progress ring */}
             <circle cx="65" cy="65" r={gaugeRadius} fill="none"
@@ -92,10 +95,10 @@ export default function DefenderPanel() {
       </div>
 
       {/* Status badges */}
-      <div className="flex justify-center gap-2 mb-4 h-6">
+      <div className="flex justify-center gap-2 mb-5 h-6">
         {hasBlocked ? (
           <span className="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-full font-bold animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]">
-            🛡️ ATTACK BLOCKED
+            🛑 ATTACK BLOCKED
           </span>
         ) : hasAlerted ? (
           <span className="text-[10px] bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full font-bold animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.3)]">
@@ -105,13 +108,13 @@ export default function DefenderPanel() {
       </div>
 
       {/* Signal Breakdown */}
-      <div className="mb-4">
-        <h3 className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2 font-semibold">
+      <div className="mb-5">
+        <h3 className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-3 font-semibold">
           Signal Breakdown
         </h3>
-        <div className="space-y-1.5">
+        <div className="space-y-2 relative">
           {signalEntries.map((signal) => (
-            <div key={signal.name} className="flex items-center gap-2 group relative cursor-help">
+            <motion.div layout key={signal.name} transition={{ type: "spring", stiffness: 300, damping: 25 }} className="flex items-center gap-2 group relative cursor-help">
               <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 w-48 p-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
                 <p className="text-[10px] text-[var(--color-text-dim)] font-medium leading-relaxed normal-case">
                   {SIGNAL_DESCRIPTIONS[signal.name] || 'Detection signal strength'}
@@ -130,7 +133,7 @@ export default function DefenderPanel() {
               <span className="text-[10px] font-mono w-6 text-right transition-colors duration-1000" style={{ color: signal.color }}>
                 {signal.value}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -151,13 +154,13 @@ export default function DefenderPanel() {
               return (
                 <div key={alert.id || i}
                   className={`p-2 rounded-lg border text-[10px] transition-all duration-300 ${styles.border} ${styles.bg}`}>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className={`font-bold uppercase ${styles.text}`}>
                         {alert.severity}
                       </span>
-                      {alert.technique_id && (
-                        <span className="font-mono text-[var(--color-accent)] bg-blue-500/10 px-1 py-0.5 rounded">
+                      {alert.technique_id && alert.technique_id !== 'N/A' && (
+                        <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded ${styles.techBg} ${styles.techText}`}>
                           {alert.technique_id}
                         </span>
                       )}
@@ -168,7 +171,8 @@ export default function DefenderPanel() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[var(--color-text-dim)] leading-relaxed">{alert.title}</p>
+                  <p className="text-[10px] text-[var(--color-text)] font-semibold leading-relaxed mb-0.5 break-words">{alert.title}</p>
+                  {alert.message && <p className="text-[9px] text-[var(--color-text-dim)] leading-relaxed break-words">{alert.message}</p>}
                 </div>
               );
             })

@@ -46,7 +46,7 @@ export default class ErrorBoundary extends React.Component {
             <div className="mt-6 flex justify-end">
               <button 
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-white rounded-lg transition-colors font-medium text-sm"
+                className="px-4 py-2 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text)] rounded-lg transition-colors font-medium text-sm"
               >
                 Reload Dashboard
               </button>

@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { scenarios } from '../config/scenarios';
 
 // MITRE ATT&CK stages definitions
 export const STAGE_DEFINITIONS = {
@@ -26,6 +27,13 @@ const useSimulationStore = create((set, get) => ({
   // ─── Connection State ───────────────────────────────────
   connected: true, // Optimistic default, useWebSocket handles grace period disconnects
   setConnected: (val) => set({ connected: val }),
+
+  // ─── Scenario State ─────────────────────────────────────
+  selectedScenario: 'credential_intrusion',
+  setSelectedScenario: (scenarioId) => {
+    get().reset(); // Full reset before new run
+    set({ selectedScenario: scenarioId });
+  },
 
   // ─── Detection Toggle ──────────────────────────────────
   detectionEnabled: true,
@@ -215,18 +223,65 @@ const useSimulationStore = create((set, get) => ({
     state.setRunning(true);
     state.setSimulationState('running');
     
-    const stages = ATTACK_STAGES.map(s => s.id);
+    const scenario = scenarios[state.selectedScenario];
+    const stages = scenario.stages;
     let stageIdx = 0;
-    // Track which stage is currently active (separate from progression counter)
-    // stageIdx points to the NEXT stage to start; activeStageIdx is the one currently running
     let activeStageIdx = -1;
     let blocked = false;
 
     let currentRisk = 0;
+    
+    // For false positive, we just pop risk up briefly then end
+    if (stages.length === 0) {
+      setTimeout(() => {
+        get().updateRiskScore({
+          isLocalDemoUpdate: true,
+          risk_score: 30,
+          signals: {
+            isolation_forest: 10,
+            graph_anomaly: 5,
+            beacon_detection: 0,
+            login_anomaly: 45,
+            mass_command: 0,
+          },
+          has_alerted: false,
+          has_blocked: false,
+        });
+        get().addAttackEvent({
+          stage: 'benign',
+          action: 'Authorized operator logged in for routine maintenance.',
+          timestamp: new Date().toISOString()
+        });
+      }, 1000);
+
+      setTimeout(() => {
+        get().addAttackEvent({
+          stage: 'benign',
+          action: 'Isolated meter restart — Zone E, scheduled maintenance.',
+          timestamp: new Date().toISOString()
+        });
+      }, 2000);
+      
+      setTimeout(() => {
+        get().addAlert({
+          title: "Benign Activity Analyzed",
+          severity: "info",
+          confidence: 0.95,
+          technique_id: 'N/A',
+          message: "Misconfigured automated maintenance script. No threat detected.",
+          timestamp: new Date().toISOString()
+        });
+        get().setSimulationState('normal_ops'); // Distinct terminal state
+      }, 3500);
+      return;
+    }
+
     const riskInterval = setInterval(() => {
       if (blocked) return; // stop updating risk after block
       
-      currentRisk += 92 / (12000 / 500); // reach 92 over ~12 seconds; hits 75 at ~t=9.8s (during C2)
+      // Different pacing based on scenario
+      const riskIncrement = scenario.id === 'slow_burn_apt' ? (92 / (40000 / 500)) : (92 / (12000 / 500));
+      currentRisk += riskIncrement;
       
       // Detection ON: block when score crosses threshold
       if (get().detectionEnabled && currentRisk >= 75) {
@@ -234,7 +289,6 @@ const useSimulationStore = create((set, get) => ({
         blocked = true;
         clearInterval(riskInterval);
         
-        // Block the CURRENTLY ACTIVE stage (not the next one)
         const blockedStageIdx = activeStageIdx >= 0 ? activeStageIdx : 0;
         get().setStageStatus(stages[blockedStageIdx], 'blocked');
         get().setSimulationState('blocked');
@@ -243,12 +297,11 @@ const useSimulationStore = create((set, get) => ({
           title: "APT Attack BLOCKED — Automated Response Triggered",
           severity: "critical",
           confidence: 0.75,
-          technique_id: ATTACK_STAGES[blockedStageIdx]?.technique || 'T0826',
+          technique_id: ATTACK_STAGES.find(s => s.id === stages[blockedStageIdx])?.technique || 'T0826',
           message: `Composite risk score (75) exceeded block threshold during ${stages[blockedStageIdx].replace('_', ' ')}. Blocking compromised operator sessions and preventing further meter commands.`,
           timestamp: new Date().toISOString()
         });
         
-        // Halt all downstream stages (everything after the blocked one)
         for (let i = blockedStageIdx + 1; i < stages.length; i++) {
            get().setStageStatus(stages[i], 'halted');
         }
@@ -257,18 +310,15 @@ const useSimulationStore = create((set, get) => ({
         clearInterval(riskInterval);
       }
       
-      // Always push risk score and signals — even with Detection OFF.
-      // This enables the "passive monitoring" narrative: the audience sees the
-      // score climbing dangerously with nothing in place to act on it.
       get().updateRiskScore({
         isLocalDemoUpdate: true,
         risk_score: Math.round(currentRisk * 100) / 100,
         signals: {
-          isolation_forest: currentRisk > 60 ? 80 : Math.min(30, currentRisk),
-          graph_anomaly: currentRisk > 50 ? 85 : Math.min(20, currentRisk * 0.5),
-          beacon_detection: currentRisk > 70 ? 90 : Math.min(10, currentRisk * 0.3),
-          login_anomaly: currentRisk > 40 ? 75 : Math.min(15, currentRisk * 0.4),
-          mass_command: currentRisk > 85 ? 95 : Math.min(5, currentRisk * 0.1),
+          isolation_forest: scenario.signalEmphasis.isolation_forest === 'high' ? Math.min(80, currentRisk) : Math.min(30, currentRisk * 0.5),
+          graph_anomaly: scenario.signalEmphasis.graph_anomaly === 'high' ? Math.min(85, currentRisk) : Math.min(20, currentRisk * 0.5),
+          beacon_detection: scenario.signalEmphasis.beacon_detection === 'high' ? Math.min(90, currentRisk) : Math.min(10, currentRisk * 0.3),
+          login_anomaly: scenario.signalEmphasis.login_anomaly === 'high' ? Math.min(75, currentRisk) : Math.min(15, currentRisk * 0.4),
+          mass_command: scenario.signalEmphasis.mass_command === 'high' ? Math.min(95, currentRisk) : Math.min(5, currentRisk * 0.1),
         },
         has_alerted: currentRisk >= 65,
         has_blocked: blocked,
@@ -293,7 +343,7 @@ const useSimulationStore = create((set, get) => ({
         get().setStageStatus(currentStage, 'active');
         get().addAttackEvent({
           stage: currentStage,
-          action: `Executing ${currentStage.replace('_', ' ')} phase...`,
+          action: scenario.stageEvents?.[currentStage] || `Executing ${currentStage.replace('_', ' ')} phase...`,
           timestamp: new Date().toISOString()
         });
         
@@ -324,13 +374,14 @@ const useSimulationStore = create((set, get) => ({
           get().addAlert({
             title: "CRITICAL ATTACK ACTIVE: Power Grid Tripping",
             severity: "critical",
+            technique_id: 'T0826',
             message: "Mass disconnect command authorized via HES.",
             timestamp: new Date().toISOString()
           });
         }
         
         stageIdx++;
-        setTimeout(nextStage, 2500);
+        setTimeout(nextStage, scenario.baseDelay);
       } else {
         // Complete the final stage
         get().setStageStatus('impact', 'complete');

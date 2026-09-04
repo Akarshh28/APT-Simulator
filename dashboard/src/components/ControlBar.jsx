@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import useSimulationStore from '../store/simulationStore';
 import useActiveState from '../hooks/useActiveState';
+import { scenarios } from '../config/scenarios';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8003';
 
@@ -75,19 +76,23 @@ export default function ControlBar() {
   }, [theme]);
 
   const startSimulation = async () => {
-    setLoading(true);
-    try {
-      reset();
-      const resp = await fetch(`${API_BASE}/api/simulation/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ detection_enabled: detectionEnabled, scenario: `scenarios/${selectedScenario}.yaml` }),
-      });
-      if (resp.ok) setRunning(true);
-    } catch (e) {
-      console.error('Failed to start:', e);
+    if (connected) {
+      setLoading(true);
+      try {
+        reset();
+        const resp = await fetch(`${API_BASE}/api/simulation/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ detection_enabled: detectionEnabled, scenario: `scenarios/${selectedScenario}.yaml` }),
+        });
+        if (resp.ok) setRunning(true);
+      } catch (e) {
+        console.error('Failed to start:', e);
+      }
+      setLoading(false);
+    } else {
+      useSimulationStore.getState().triggerDemoMode();
     }
-    setLoading(false);
   };
 
   const resetSimulation = async () => {
@@ -125,11 +130,11 @@ export default function ControlBar() {
       {/* Left: Title & Status */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-[var(--color-bg-primary)] font-bold text-sm shadow-lg">
             ⚡
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-white tracking-tight leading-none mb-1">APT Simulator</h1>
+            <h1 className="text-base font-extrabold text-[var(--color-text)] tracking-tight leading-none mb-1">APT Simulator</h1>
             <p className="text-xs text-[var(--color-text-dim)] leading-none">
               {simulationState === 'blocked' ? <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-bold">🛡️ Attack Blocked</span> : 
                simulationState === 'failed' ? <span className="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded font-bold">❌ Attack Failed</span> : 
@@ -160,32 +165,23 @@ export default function ControlBar() {
             resetSimulation();
           }}
           disabled={loading || isRunning}
-          className="bg-[var(--color-bg-hover)] border border-[var(--color-border)] text-[var(--color-text-dim)] text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500"
+          className="bg-[var(--color-bg-panel)] text-[var(--color-text)] text-sm rounded-lg px-3 py-1.5 border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-accent)]"
         >
-          <option value="credential_intrusion">Credential Intrusion (Default)</option>
-          <option value="insider_threat">Insider Threat</option>
-          <option value="slow_burn_apt">Slow-Burn APT</option>
-          <option value="false_positive">False Positive (Normal Ops)</option>
+          {Object.values(scenarios).map(s => (
+            <option key={s.id} value={s.id} className="bg-[var(--color-bg-panel)] text-[var(--color-text)]">
+              {s.name}
+            </option>
+          ))}
         </select>
 
         <button
           onClick={startSimulation}
-          disabled={loading || isRunning || !connected}
-          className="px-4 py-1.5 text-sm font-medium rounded-lg transition-all
-                     bg-[var(--color-accent)] hover:bg-blue-500 text-white
-                     disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {loading ? '...' : isRunning ? '● Running' : !connected ? '❌ Disconnected' : '▶ Start Attack'}
-        </button>
-
-        <button
-          onClick={() => useSimulationStore.getState().triggerDemoMode()}
-          disabled={isRunning}
+          disabled={loading || isRunning}
           className="px-4 py-1.5 text-sm font-bold rounded-lg transition-all
-                     bg-[var(--color-danger)] hover:bg-red-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]
+                     bg-[var(--color-danger)] hover:bg-red-600 text-[var(--color-bg-primary)] shadow-[0_0_10px_rgba(239,68,68,0.5)]
                      disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
         >
-          ⚡ Launch Full Attack (Demo)
+          {isRunning ? '● Running' : '▶ Start Attack'}
         </button>
 
         <button
