@@ -294,16 +294,16 @@ export default function SecurityArchitectureDiagram() {
           
           <g className="tiers">
             <rect x="0" y="20" width="1000" height="100" fill="var(--color-danger)" opacity="0.1" rx="8" />
-            <text x="20" y="55" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">External / Untrusted</text>
+            <text x="20" y="60" fill="var(--color-text-dim)" fontSize="32" fontWeight="bold">External / Untrusted</text>
             
             <rect x="0" y="150" width="1000" height="130" fill="#22d3ee" opacity="0.1" rx="8" />
-            <text x="20" y="175" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Identity / Access Layer</text>
+            <text x="20" y="180" fill="var(--color-text-dim)" fontSize="32" fontWeight="bold">Identity / Access Layer</text>
             
             <rect x="0" y="310" width="1000" height="130" fill="var(--color-accent)" opacity="0.1" rx="8" />
-            <text x="20" y="335" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">OT Systems</text>
+            <text x="20" y="340" fill="var(--color-text-dim)" fontSize="32" fontWeight="bold">OT Systems</text>
             
             <rect x="0" y="470" width="1000" height="130" fill="var(--color-warning)" opacity="0.1" rx="8" />
-            <text x="20" y="495" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Field Devices</text>
+            <text x="20" y="500" fill="var(--color-text-dim)" fontSize="32" fontWeight="bold">Field Devices</text>
           </g>
 
           {/* Edges render FIRST — so nodes sit on top visually */}
