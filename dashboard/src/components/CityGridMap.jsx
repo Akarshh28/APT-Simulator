@@ -159,6 +159,18 @@ export default function CityGridMap() {
 
   return (
     <div className="glass-panel p-4 h-full flex flex-col relative">
+      {/* Scenario Description */}
+      {scenarioMetadata && scenarioMetadata.narrative && (
+        <div className="mb-4 bg-[var(--color-bg-hover)] border border-[var(--color-border-dim)] rounded px-3 py-2 shrink-0">
+           <div className="text-[9px] font-bold text-[var(--color-accent)] uppercase tracking-wider mb-1">
+             Scenario: {scenarioMetadata.title}
+           </div>
+           <div className="text-[10px] text-slate-300 italic leading-snug">
+             {scenarioMetadata.narrative}
+           </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-2">

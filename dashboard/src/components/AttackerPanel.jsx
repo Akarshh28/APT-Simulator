@@ -54,11 +54,21 @@ export default function AttackerPanel() {
   if (selectedScenario === 'false_positive') {
     return (
       <div className="glass-panel p-4 h-full flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">📋</span>
-          <h2 className="text-sm font-bold text-blue-400 uppercase tracking-wider">
-            Activity Log
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg">🗡️</span>
+          <h2 className="text-sm font-bold text-[var(--color-danger)] uppercase tracking-wider">
+            Attacker Kill-Chain
           </h2>
+        </div>
+        
+        <div className="mb-4 p-3 border border-blue-500/30 bg-blue-500/10 rounded-lg shrink-0">
+           <div className="text-xs font-semibold text-blue-300 flex items-center gap-2">
+             <span className="text-xs">ℹ️</span>
+             No Attacker Stages
+           </div>
+           <div className="text-[10px] text-blue-200/70 mt-1">
+             This scenario represents normal operations with benign anomalies. Therefore, no attacker kill-chain is executed.
+           </div>
         </div>
         <div className="flex-1 overflow-y-auto space-y-3">
           {attackEvents.map((ev, i) => (
@@ -98,16 +108,7 @@ export default function AttackerPanel() {
         </h2>
       </div>
 
-      {scenarioMetadata && scenarioMetadata.narrative && (
-        <div className="mb-4 bg-[var(--color-bg-hover)] border border-[var(--color-border-dim)] rounded px-3 py-2 shrink-0">
-           <div className="text-[9px] font-bold text-[var(--color-accent)] uppercase tracking-wider mb-1">
-             Scenario: {scenarioMetadata.title}
-           </div>
-           <div className="text-[10px] text-slate-300 italic leading-snug">
-             {scenarioMetadata.narrative}
-           </div>
-        </div>
-      )}
+
 
       <div className="flex-1 overflow-y-auto space-y-2">
         {selectedScenario === 'insider_threat' && (
