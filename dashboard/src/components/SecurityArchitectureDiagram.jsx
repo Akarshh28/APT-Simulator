@@ -23,18 +23,18 @@ const NODE_COLORS = {
   external: '#ef4444',
 };
 
-// Fixed positions on an 800x600 viewBox
+// Fixed positions on an 1000x600 viewBox
 const POSITIONS = {
-  c2_host:         { x: 400, y: 70 },
-  rogue_acct:      { x: 100, y: 220 },
-  operator1:       { x: 220, y: 220 },
-  admin:           { x: 340, y: 220 },
-  svc_backup:      { x: 460, y: 220 },
-  maintenance_svc: { x: 580, y: 220 },
-  field_tech:      { x: 700, y: 220 },
-  MDMS:            { x: 300, y: 380 },
-  HES:             { x: 500, y: 380 },
-  meters:          { x: 400, y: 530 },
+  c2_host:         { x: 500, y: 70 },
+  rogue_acct:      { x: 125, y: 220 },
+  operator1:       { x: 275, y: 220 },
+  admin:           { x: 425, y: 220 },
+  svc_backup:      { x: 575, y: 220 },
+  maintenance_svc: { x: 725, y: 220 },
+  field_tech:      { x: 875, y: 220 },
+  MDMS:            { x: 375, y: 380 },
+  HES:             { x: 625, y: 380 },
+  meters:          { x: 500, y: 530 },
 };
 
 // ============================================================
@@ -284,7 +284,7 @@ export default function SecurityArchitectureDiagram() {
       </div>
 
       <div className="flex-1 min-h-0 relative">
-        <svg viewBox="0 0 800 620" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <svg viewBox="0 0 1000 620" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <defs>
             <filter id="topo-glow-red" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="4" result="blur" />
@@ -293,16 +293,16 @@ export default function SecurityArchitectureDiagram() {
           </defs>
           
           <g className="tiers">
-            <rect x="0" y="20" width="800" height="100" fill="var(--color-danger)" opacity="0.1" rx="8" />
+            <rect x="0" y="20" width="1000" height="100" fill="var(--color-danger)" opacity="0.1" rx="8" />
             <text x="20" y="55" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">External / Untrusted</text>
             
-            <rect x="0" y="150" width="800" height="130" fill="#22d3ee" opacity="0.1" rx="8" />
+            <rect x="0" y="150" width="1000" height="130" fill="#22d3ee" opacity="0.1" rx="8" />
             <text x="20" y="175" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Identity / Access Layer</text>
             
-            <rect x="0" y="310" width="800" height="130" fill="var(--color-accent)" opacity="0.1" rx="8" />
+            <rect x="0" y="310" width="1000" height="130" fill="var(--color-accent)" opacity="0.1" rx="8" />
             <text x="20" y="335" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">OT Systems</text>
             
-            <rect x="0" y="470" width="800" height="130" fill="var(--color-warning)" opacity="0.1" rx="8" />
+            <rect x="0" y="470" width="1000" height="130" fill="var(--color-warning)" opacity="0.1" rx="8" />
             <text x="20" y="495" fill="var(--color-text-dim)" fontSize="22" fontWeight="bold">Field Devices</text>
           </g>
 
@@ -345,12 +345,12 @@ export default function SecurityArchitectureDiagram() {
                   className={`cursor-pointer transition-transform duration-300 hover:scale-110 ${isNew ? 'animate-node-appear' : ''}`}
                 >
                   {isComp && (
-                    <circle r="28" fill="none" stroke="#ef4444" strokeWidth="2" className="animate-pulse-ring" />
+                    <circle r="36" fill="none" stroke="#ef4444" strokeWidth="2" className="animate-pulse-ring" />
                   )}
-                  <circle r="22" fill="var(--color-bg-panel)" stroke={NODE_COLORS[meta.type] || '#888'} strokeWidth="1.5" />
-                  <text textAnchor="middle" dominantBaseline="central" fontSize="24">{meta.icon}</text>
-                  <rect x="-55" y="28" width="110" height="26" rx="4" fill="var(--color-bg-card)" opacity="0.9" />
-                  <text y="46" textAnchor="middle" fill="var(--color-text)" fontSize="16" fontWeight="bold">{meta.label}</text>
+                  <circle r="28" fill="var(--color-bg-panel)" stroke={NODE_COLORS[meta.type] || '#888'} strokeWidth="1.5" />
+                  <text textAnchor="middle" dominantBaseline="central" fontSize="30">{meta.icon}</text>
+                  <rect x="-70" y="32" width="140" height="28" rx="4" fill="var(--color-bg-card)" opacity="0.9" />
+                  <text y="51" textAnchor="middle" fill="var(--color-text)" fontSize="18" fontWeight="bold">{meta.label}</text>
                 </g>
               );
             })}
