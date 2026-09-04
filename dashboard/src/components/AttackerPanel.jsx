@@ -87,15 +87,28 @@ export default function AttackerPanel() {
   attackEvents.forEach((ev) => {
     stageEvents[ev.stage] = ev;
   });
+  
+  const scenarioMetadata = useSimulationStore(s => s.scenarioMetadata);
 
   return (
     <div className="glass-panel p-4 h-full flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">🗡️</span>
         <h2 className="text-sm font-bold text-[var(--color-danger)] uppercase tracking-wider">
           Attacker Kill-Chain
         </h2>
       </div>
+
+      {scenarioMetadata && scenarioMetadata.narrative && (
+        <div className="mb-4 bg-[var(--color-bg-hover)] border border-[var(--color-border-dim)] rounded px-3 py-2 shrink-0">
+           <div className="text-[9px] font-bold text-[var(--color-accent)] uppercase tracking-wider mb-1">
+             Scenario: {scenarioMetadata.title}
+           </div>
+           <div className="text-[10px] text-slate-300 italic leading-snug">
+             {scenarioMetadata.narrative}
+           </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto space-y-2">
         {selectedScenario === 'insider_threat' && (
