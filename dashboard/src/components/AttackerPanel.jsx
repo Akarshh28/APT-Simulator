@@ -83,8 +83,6 @@ export default function AttackerPanel() {
   }
 
   // Normal Kill-Chain UI
-  const activeStages = scenario.stages.map(id => ATTACK_STAGES.find(s => s.id === id)).filter(Boolean);
-  
   const stageEvents = {};
   attackEvents.forEach((ev) => {
     stageEvents[ev.stage] = ev;
