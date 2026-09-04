@@ -180,25 +180,6 @@ export default function CityGridMap() {
         </div>
       </div>
 
-      {/* Narrative Banner */}
-      {scenarioMetadata && scenarioMetadata.narrative && (
-        <div className="flex justify-center mb-3 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
-          <div className="bg-[var(--color-bg-hover)] border border-[var(--color-border-dim)] rounded-lg px-4 py-2 text-center w-full max-w-2xl">
-            <div className="text-[10px] font-bold text-[var(--color-accent)] uppercase tracking-wider mb-0.5">
-              Scenario: {scenarioMetadata.title}
-            </div>
-            {scenarioMetadata.description && (
-              <div className="text-xs font-semibold text-slate-200 mb-1">
-                {scenarioMetadata.description}
-              </div>
-            )}
-            <div className="text-[11px] text-slate-400 italic">
-              {scenarioMetadata.narrative}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Blocked Banner - Now a flex sibling so it pushes the map down without overlapping */}
       {hasBlocked && (
         <div className="flex justify-center mb-3 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
